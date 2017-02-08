@@ -23,7 +23,7 @@ public class GOFilter implements Filter {
 	private final static Logger log = Logger.getLogger(GOFilter.class);
 	private final static String[] GOToInclude = { "GO:0005635", "GO:0031965", "GO:0090286", "GO:00069980", "GO:0090292",
 			"GO:0005639", "GO:0005638", "GO:0016363", "GO:0048471", "GO:0006997", "GO:1900180", "GO:0035105",
-			"GO:0044614", "GO:0005637", "GO:0005643", "GO:0017056" };
+			"GO:0044614", "GO:0005637", "GO:0005643", "GO:0017056", "GO:0097726" };
 
 	private final static String[] GOToExclude = { "GO:0035097", "GO:0034708", "GO:1990234", "GO:0016591", "GO:0055029",
 			"GO:0000428", "GO:0030880", "GO:0031248", "GO:1902493", "GO:0016605", "GO:0005667", "GO:0005730",
