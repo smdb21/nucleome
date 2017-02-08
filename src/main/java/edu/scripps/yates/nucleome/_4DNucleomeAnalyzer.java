@@ -61,9 +61,9 @@ public class _4DNucleomeAnalyzer {
 	private final String userName = "salvador";
 	private final String pass = "Natjeija21";
 	private final String remotefileName = "DTASelect-filter.txt";
-	private final String datasetsPathsFile = "C:\\Users\\Salva\\Desktop\\data\\4D_Nucleome\\datasets_paths.txt";
-	private final String datasetsPhosphoPathsFile = "C:\\Users\\Salva\\Desktop\\data\\4D_Nucleome\\datasets_paths_phospho.txt";
-	private final File outputFolder = new File("C:\\Users\\Salva\\Desktop\\data\\4D_Nucleome\\analysis");
+	private final String datasetsPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths.txt";
+	private final String datasetsPhosphoPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths_phospho.txt";
+	private final File outputFolder = new File("z:\\share\\Salva\\data\\4D_Nucleome\\analysis");
 	private final Map<CellType, List<Pair<String, Double>>> scoresByCellType = new HashMap<CellType, List<Pair<String, Double>>>();
 	private List<ProteinGroup> proteinGroups;
 	private GOFilter goFilter;
