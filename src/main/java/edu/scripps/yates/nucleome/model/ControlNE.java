@@ -25,7 +25,7 @@ public class ControlNE {
 	}
 
 	private static void load() throws IOException {
-		File inputFile = new File("C:\\Users\\Salva\\Desktop\\data\\4D_Nucleome\\NE_Control_50.txt");
+		File inputFile = new File(edu.scripps.yates.nucleome.Constants.CONTROL_FILE);
 		accs = new HashSet<String>();
 		final List<String> readColumnFromTextFile = FileUtils.readColumnFromTextFile(inputFile, "\t", 0, true);
 		accs.addAll(readColumnFromTextFile);

@@ -13,16 +13,17 @@ public class Constants {
 	public static boolean GO_FILTER;
 	public static boolean includeNegativeScoring = false;
 	public final static UniprotProteinRetriever upr = new UniprotProteinRetriever(null,
-			new File("C:\\Users\\Salva\\Desktop\\tmp\\uniprotKB"), true);
+			new File("z:\\share\\Salva\\data\\uniprotKB"), true);
 	public final static Pattern decoy = Pattern.compile("Reverse");
+	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE_Control_50.txt";
 
 	public static int MIN_PSM_PER_PROTEIN = 2;
 	public static boolean TESTING;
 
 	public static CellCompartment cellCompartmentToStudy = CellCompartment.NE;
 	/**
-	 * Defines which is the threshold used to consider a protein to be
-	 * enriched.<br>
+	 * Defines which is the threshold used to consider a protein to be enriched.
+	 * <br>
 	 * Note that only enriched proteins are considered in the comparisons
 	 */
 	public static int ENRICHMENT_SCORE_THRESHOLD;

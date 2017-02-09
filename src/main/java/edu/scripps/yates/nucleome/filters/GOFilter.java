@@ -35,7 +35,7 @@ public class GOFilter implements Filter {
 	private final static String[] GOPartNameToExclude = { "Spliceosome", "RNA polymerase II", "neuron", "DNA helicase",
 			"Centrosome", "transcription factor activity", "mitochondrion" };
 
-	private final static GORetriever goRetriever = new GORetriever(new File("C:\\Users\\Salva\\Desktop\\tmp\\go"));
+	private final static GORetriever goRetriever = new GORetriever(new File("z:\\share\\Salva\\data\\go"));
 
 	private final Set<String> filteredOut = new HashSet<String>();
 	private final String name;
