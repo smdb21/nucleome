@@ -307,39 +307,43 @@ public class _4DNucleomeAnalyzer {
 
 	private void run() throws IOException {
 		// choose scoring function
+		long t1 = System.currentTimeMillis();
+		try {
+			scoringFunction = new SPCScoringFunction(this);
 
-		scoringFunction = new SPCScoringFunction(this);
+			// load data
+			loadDatasets();
 
-		// load data
-		loadDatasets();
+			// anotate proteins with uniprot
+			// annotateProteins();
 
-		// anotate proteins with uniprot
-		// annotateProteins();
+			// print scores for each cell type
+			final CellType[] values = CellType.values();
+			for (CellType cellType : values) {
+				printScoreDistributions(cellType);
+			}
+			// print scores for all celltypes together
+			printScoreDistributions(null);
 
-		// print scores for each cell type
-		final CellType[] values = CellType.values();
-		for (CellType cellType : values) {
-			printScoreDistributions(cellType);
+			// compare the scores between U and A
+			PairComparisonReport comparisonReportUA = compareScores(CellType.U, CellType.A);
+			comparisonReportUA
+					.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_comparison.txt"));
+			// compare the scores between U and M
+			PairComparisonReport comparisonReportUM = compareScores(CellType.U, CellType.M);
+			comparisonReportUM
+					.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_M_comparison.txt"));
+			// compare the scores between A and M
+			PairComparisonReport comparisonReportAM = compareScores(CellType.A, CellType.M);
+			comparisonReportAM
+					.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "A_vs_M_comparison.txt"));
+			// compare the scores between U and A and M
+			TripleComparisonReport comparisonReportUAM = compareScores(CellType.U, CellType.A, CellType.M);
+			comparisonReportUAM.printToFile(
+					new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_vs_M_comparison_FDR.txt"));
+		} finally {
+			log.info("It took " + DatesUtil.getDescriptiveTimeFromMillisecs(System.currentTimeMillis() - t1));
 		}
-		// print scores for all celltypes together
-		printScoreDistributions(null);
-
-		// compare the scores between U and A
-		PairComparisonReport comparisonReportUA = compareScores(CellType.U, CellType.A);
-		comparisonReportUA
-				.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_comparison.txt"));
-		// compare the scores between U and M
-		PairComparisonReport comparisonReportUM = compareScores(CellType.U, CellType.M);
-		comparisonReportUM
-				.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_M_comparison.txt"));
-		// compare the scores between A and M
-		PairComparisonReport comparisonReportAM = compareScores(CellType.A, CellType.M);
-		comparisonReportAM
-				.printToFile(new File(outputFolder.getAbsolutePath() + File.separator + "A_vs_M_comparison.txt"));
-		// compare the scores between U and A and M
-		TripleComparisonReport comparisonReportUAM = compareScores(CellType.U, CellType.A, CellType.M);
-		comparisonReportUAM.printToFile(
-				new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_vs_M_comparison_FDR.txt"));
 	}
 
 	private void annotateProteins() {
