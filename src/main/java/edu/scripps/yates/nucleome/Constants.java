@@ -16,7 +16,7 @@ public class Constants {
 			new File("z:\\share\\Salva\\data\\uniprotKB"), true);
 	public final static Pattern decoy = Pattern.compile("Reverse");
 	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE_Control_50.txt";
-
+	public static final String SEPARATOR = " | ";
 	public static int MIN_PSM_PER_PROTEIN = 2;
 	public static boolean TESTING;
 

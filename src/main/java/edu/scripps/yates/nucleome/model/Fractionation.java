@@ -118,14 +118,17 @@ public class Fractionation {
 
 				final Set<Protein> proteins = parser.getProteins().get(groupableProtein.getAccession());
 				for (Protein protein : proteins) {
+					boolean valid = true;
 					if (!skipFilters) {
 						for (Filter filter : filters) {
 							if (!filter.isValid(protein)) {
-								return 0;
+								valid = false;
 							}
 						}
 					}
-					psms.addAll(protein.getPSMs());
+					if (valid) {
+						psms.addAll(protein.getPSMs());
+					}
 				}
 			}
 		}

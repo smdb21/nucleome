@@ -141,9 +141,9 @@ public class GOFilter implements Filter {
 				}
 			}
 			if (numDiscarded != 0) {
-				log.info(filteredOut.size() + " proteins discarded (" + name + ")");
-				log.info(valid.size() + " proteins valid (" + name + ")");
-				log.info((filteredOut.size() + valid.size()) + " total proteins (" + name + ")");
+				log.debug(filteredOut.size() + " proteins discarded (" + name + ")");
+				log.debug(valid.size() + " proteins valid (" + name + ")");
+				log.debug((filteredOut.size() + valid.size()) + " total proteins (" + name + ")");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

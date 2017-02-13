@@ -35,7 +35,6 @@ import edu.scripps.yates.utilities.util.Pair;
 
 public class _4DNucleomeAnalyzer {
 	private final static Logger log = Logger.getLogger(_4DNucleomeAnalyzer.class);
-	private static final String SEPARATOR = " | ";
 
 	public static void main(String[] args) {
 		_4DNucleomeAnalyzer analyzer;
@@ -340,7 +339,7 @@ public class _4DNucleomeAnalyzer {
 			// compare the scores between U and A and M
 			TripleComparisonReport comparisonReportUAM = compareScores(CellType.U, CellType.A, CellType.M);
 			comparisonReportUAM.printToFile(
-					new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_vs_M_comparison_FDR.txt"));
+					new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_vs_M_comparison.txt"));
 		} finally {
 			log.info("It took " + DatesUtil.getDescriptiveTimeFromMillisecs(System.currentTimeMillis() - t1));
 		}
@@ -363,11 +362,12 @@ public class _4DNucleomeAnalyzer {
 	}
 
 	private PairComparisonReport compareScores(CellType cellType1, CellType cellType2) {
+		log.info(" Comparing " + cellType1 + " with " + cellType2);
 		final List<Pair<String, Double>> scores1 = scoresByCellType.get(cellType1);
 		Map<String, Double> scoreMap1 = getScoreMap(scores1);
 		final List<Pair<String, Double>> scores2 = scoresByCellType.get(cellType2);
 		Map<String, Double> scoreMap2 = getScoreMap(scores2);
-		return new PairComparisonReport(cellType1, scoreMap1, cellType2, scoreMap2);
+		return new PairComparisonReport(this, cellType1, scoreMap1, cellType2, scoreMap2);
 	}
 
 	private TripleComparisonReport compareScores(CellType cellType1, CellType cellType2, CellType cellType3) {
@@ -377,7 +377,7 @@ public class _4DNucleomeAnalyzer {
 		Map<String, Double> scoreMap2 = getScoreMap(scores2);
 		final List<Pair<String, Double>> scores3 = scoresByCellType.get(cellType3);
 		Map<String, Double> scoreMap3 = getScoreMap(scores3);
-		return new TripleComparisonReport(cellType1, scoreMap1, cellType2, scoreMap2, cellType3, scoreMap3);
+		return new TripleComparisonReport(this, cellType1, scoreMap1, cellType2, scoreMap2, cellType3, scoreMap3);
 	}
 
 	private Map<String, Double> getScoreMap(List<Pair<String, Double>> scoreList) {
@@ -453,63 +453,23 @@ public class _4DNucleomeAnalyzer {
 			for (Pair<String, Double> pair : scores) {
 				if (!Double.isNaN(pair.getSecondElement())) {
 					String rawAcc = pair.getFirstelement();
-					Set<String> accs = new HashSet<String>();
-					if (Constants.USE_GROUPS) {
-						// remove the [evidence] at the end
-						if (rawAcc.contains("[")) {
-							rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
-						}
-						if (rawAcc.contains(",")) {
-							final String[] split = rawAcc.split(",");
-							for (String acc : split) {
-								accs.add(acc);
-							}
-						} else {
-							accs.add(rawAcc);
-						}
-					} else {
-						final String acc = FastaParser.getACC(rawAcc).getFirstelement();
-						accs.add(acc);
+					if (rawAcc.contains("[")) {
+						rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
 					}
-					String proteinName = "";
-
-					List<String> geneNames = new ArrayList<String>();
-					for (String acc : accs) {
-
-						final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
-						if (annotatedProtein.containsKey(acc)) {
-							final Protein protein2 = annotatedProtein.get(acc);
-							if (protein2 != null) {
-								if (protein2.getPrimaryAccession() != null
-										&& protein2.getPrimaryAccession().getDescription() != null) {
-									if (!"".equals(proteinName)) {
-										proteinName += SEPARATOR;
-									}
-									proteinName += protein2.getPrimaryAccession().getDescription();
-								}
-								boolean onePrimary = false;
-								if (protein2.getGenes() != null) {
-									for (Gene gene : protein2.getGenes()) {
-										if (gene.getGeneType().equals("primary")) {
-											onePrimary = true;
-											if (!geneNames.contains(gene.getGeneID())) {
-												geneNames.add(gene.getGeneID());
-											}
-										}
-									}
-									if (!onePrimary) {
-										if (protein2.getGenes() != null && !protein2.getGenes().isEmpty()) {
-											geneNames.add(protein2.getGenes().iterator().next().getGeneID());
-										}
-									}
-								}
-							}
+					String geneNameString = getGeneNameString(rawAcc);
+					String proteinNameString = getProteinNameString(rawAcc);
+					// testing
+					if (ControlNE.isControl(rawAcc)) {
+						double score = scoringFunction.getScore(getGroup(rawAcc), celltype);
+						if (score < 1) {
+							score = scoringFunction.getScore(getGroup(rawAcc), celltype);
 						}
 					}
+					// end testing
 					String valid = isValid(rawAcc) ? "VALID" : "FILTERED";
-					fw.write(num++ + "\t" + valid + "\t" + rawAcc + "\t" + getGeneName(geneNames) + "\t" + proteinName
+					fw.write(num++ + "\t" + valid + "\t" + rawAcc + "\t" + geneNameString + "\t" + proteinNameString
 							+ "\t" + getProteinEvidences(rawAcc) + "\t" + pair.getSecondElement() + "\t"
-							+ ControlNE.isControl(rawAcc) + "\t" + Constants.isDecoy(accs) + "\t");
+							+ ControlNE.isControl(rawAcc) + "\t" + Constants.isDecoy(getAccs(rawAcc)) + "\t");
 					for (Experiment experiment : getAllExperiments()) {
 						if (celltype == null || experiment.getCellType() == celltype) {
 							// print the averages
@@ -554,6 +514,83 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
+	public Set<String> getAccs(String rawAcc) {
+		Set<String> accs = new HashSet<String>();
+		if (Constants.USE_GROUPS) {
+			// remove the [evidence] at the end
+			if (rawAcc.contains("[")) {
+				rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
+			}
+			if (rawAcc.contains(",")) {
+				final String[] split = rawAcc.split(",");
+				for (String acc : split) {
+					accs.add(acc);
+				}
+			} else {
+				accs.add(rawAcc);
+			}
+		} else {
+			final String acc = FastaParser.getACC(rawAcc).getFirstelement();
+			accs.add(acc);
+		}
+		return accs;
+	}
+
+	public String getProteinNameString(String rawAcc) {
+
+		String proteinName = "";
+
+		for (String acc : getAccs(rawAcc)) {
+
+			final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
+			if (annotatedProtein.containsKey(acc)) {
+				final Protein protein2 = annotatedProtein.get(acc);
+				if (protein2 != null) {
+					if (protein2.getPrimaryAccession() != null
+							&& protein2.getPrimaryAccession().getDescription() != null) {
+						if (!"".equals(proteinName)) {
+							proteinName += Constants.SEPARATOR;
+						}
+						proteinName += protein2.getPrimaryAccession().getDescription();
+					}
+
+				}
+			}
+		}
+		return proteinName;
+	}
+
+	public String getGeneNameString(String rawAcc) {
+
+		List<String> geneNames = new ArrayList<String>();
+		for (String acc : getAccs(rawAcc)) {
+
+			final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
+			if (annotatedProtein.containsKey(acc)) {
+				final Protein protein2 = annotatedProtein.get(acc);
+				if (protein2 != null) {
+					boolean onePrimary = false;
+					if (protein2.getGenes() != null) {
+						for (Gene gene : protein2.getGenes()) {
+							if (gene.getGeneType().equals("primary")) {
+								onePrimary = true;
+								if (!geneNames.contains(gene.getGeneID())) {
+									geneNames.add(gene.getGeneID());
+								}
+							}
+						}
+						if (!onePrimary) {
+							if (protein2.getGenes() != null && !protein2.getGenes().isEmpty()) {
+								geneNames.add(protein2.getGenes().iterator().next().getGeneID());
+							}
+						}
+					}
+				}
+			}
+		}
+		return getGeneName(geneNames);
+	}
+
 	private List<Experiment> getAllExperiments() {
 		List<Experiment> list = new ArrayList<Experiment>();
 		list.addAll(experimentsA);
@@ -564,7 +601,18 @@ public class _4DNucleomeAnalyzer {
 
 	private ProteinGroup getGroup(String groupKey) throws IOException {
 		List<ProteinGroup> proteinGroups = getProteinGroups().stream()
-				.filter(group -> group.getKey().contains(groupKey)).collect(Collectors.toList());
+				.filter(group -> group.getKey().contains(groupKey) && !group.getKey().toLowerCase().contains("reverse"))
+				.collect(Collectors.toList());
+		if (proteinGroups.size() > 1) {
+			log.warn("More than one group with key " + groupKey);
+		}
+		if (proteinGroups.isEmpty()) {
+			proteinGroups = getProteinGroups().stream().filter(group -> group.getKey().contains(groupKey))
+					.collect(Collectors.toList());
+			if (!proteinGroups.isEmpty()) {
+				return proteinGroups.get(0);
+			}
+		}
 		if (!proteinGroups.isEmpty()) {
 			return proteinGroups.get(0);
 		}
@@ -573,6 +621,12 @@ public class _4DNucleomeAnalyzer {
 
 	private String getProteinEvidences(String groupKey) throws IOException {
 		List<String> proteinAccs = new ArrayList<String>();
+		if (groupKey == null) {
+			return "";
+		}
+		if (groupKey.contains("[")) {
+			groupKey = groupKey.substring(0, groupKey.indexOf("["));
+		}
 		if (groupKey.contains(",")) {
 			String[] split = groupKey.split(",");
 			for (String string : split) {
@@ -593,9 +647,17 @@ public class _4DNucleomeAnalyzer {
 					}
 				}
 				if (!"".equals(sb.toString())) {
-					sb.append(SEPARATOR);
+					sb.append(Constants.SEPARATOR);
 				}
-				sb.append(evidence);
+				if (evidence != null) {
+					sb.append(evidence);
+				} else {
+					log.info(" I didnt find " + proteinAcc + "  in group  " + group);
+					for (GroupableProtein groupableProtein : group) {
+						log.info(groupableProtein.getAccession());
+					}
+					sb.append("");
+				}
 			}
 
 		}
@@ -610,7 +672,7 @@ public class _4DNucleomeAnalyzer {
 				continue;
 			}
 			if (!"".equals(sb.toString())) {
-				sb.append(SEPARATOR);
+				sb.append(Constants.SEPARATOR);
 			}
 			sb.append(geneName);
 			set.add(geneName);
@@ -649,7 +711,7 @@ public class _4DNucleomeAnalyzer {
 		return goFilter;
 	}
 
-	private boolean isValid(String rawAcc) throws IOException {
+	public boolean isValid(String rawAcc) throws IOException {
 		final Filter goFilter2 = getGOFilter();
 		if (Constants.USE_GROUPS) {
 			final ProteinGroup group = getGroup(rawAcc);

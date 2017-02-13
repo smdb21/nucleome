@@ -9,9 +9,11 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.utilities.util.Pair;
+import edu.scripps.yates.utilities.venndata.VennData;
 
 public class TripleComparisonReport extends PairComparisonReport {
 
@@ -19,12 +21,27 @@ public class TripleComparisonReport extends PairComparisonReport {
 	private final Map<String, Double> scoreMap3;
 	private final CellType cellType3;
 
-	public TripleComparisonReport(CellType cellType1, Map<String, Double> scoreMap1, CellType cellType2,
-			Map<String, Double> scoreMap2, CellType cellType3, Map<String, Double> scoreMap3) {
-		super(cellType1, scoreMap1, cellType2, scoreMap2);
+	public TripleComparisonReport(_4DNucleomeAnalyzer nucleomeAnalyzer, CellType cellType1,
+			Map<String, Double> scoreMap1, CellType cellType2, Map<String, Double> scoreMap2, CellType cellType3,
+			Map<String, Double> scoreMap3) {
+		super(nucleomeAnalyzer, cellType1, scoreMap1, cellType2, scoreMap2);
 
 		this.scoreMap3 = scoreMap3;
 		this.cellType3 = cellType3;
+	}
+
+	public VennData getVennData() throws IOException {
+		if (!ready) {
+			compare();
+		}
+		if (venn == null) {
+			Set<String> enriched1 = getEnriched(scoreMap1);
+			Set<String> enriched2 = getEnriched(scoreMap2);
+			Set<String> enriched3 = getEnriched(scoreMap3);
+			venn = new VennData(cellType1.name() + " vs " + cellType2.name() + " vs " + cellType3.name(),
+					cellType1.name(), enriched1, cellType2.name(), enriched2, cellType3.name(), enriched3);
+		}
+		return venn;
 	}
 
 	@Override
@@ -39,6 +56,13 @@ public class TripleComparisonReport extends PairComparisonReport {
 			fw.write("Report made on " + new Date() + "\n");
 			fw.write("We consider enriched proteins when having an enrichment score > "
 					+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
+			fw.write(getEnriched(scoreMap1).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+					+ " in " + cellType1 + "\n");
+			fw.write(getEnriched(scoreMap2).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+					+ " in " + cellType2 + "\n");
+			fw.write(getEnriched(scoreMap3).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+					+ " in " + cellType3 + "\n");
+
 			fw.write(uniquesTo1.size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
 					+ cellType1 + " and not in " + cellType2 + " and not in " + cellType3 + "\n");
 			fw.write(uniquesTo2.size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
@@ -48,9 +72,9 @@ public class TripleComparisonReport extends PairComparisonReport {
 			fw.write(intersection.size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in all "
 					+ cellType1 + " and " + cellType2 + " and " + cellType3 + "\n\n");
 
-			fw.write("\n" + uniquesTo1.size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
-					+ cellType1 + " and not in " + cellType2 + " and not in " + cellType3 + ":\n");
-			fw.write("#\tACC\tEnrichment_Score\tprotein description\n");
+			fw.write("\nCopy and paste this URL to see the graphical representation of the comparison:\n"
+					+ getVennData().getImageURL().toString() + "\n\n");
+			fw.write("#\tACC\tEnrichment_Score\tgene name(s)\tprotein description(s)\n");
 			writeListOfPairs(fw, uniquesTo1);
 
 			fw.write("\n" + uniquesTo2.size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
