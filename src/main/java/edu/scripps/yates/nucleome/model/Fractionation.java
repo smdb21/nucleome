@@ -14,6 +14,7 @@ import edu.scripps.yates.nucleome.filters.PeptidePerProtein;
 import edu.scripps.yates.utilities.grouping.GroupableProtein;
 import edu.scripps.yates.utilities.grouping.ProteinGroup;
 import edu.scripps.yates.utilities.proteomicsmodel.PSM;
+import edu.scripps.yates.utilities.proteomicsmodel.Peptide;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
 
@@ -29,7 +30,7 @@ public class Fractionation {
 	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, RemoteSSHFileReference remote,
 			CellType cellType) throws IOException {
 		this.cellCompartment = cellCompartment;
-		name = experimentName + "-" + cellCompartment.name() + "-rep" + num;
+		name = experimentName + cellCompartment.name() + "_rep" + num;
 		parser = new ProteinDTASelectParser(name, remote);
 		// removed since we want to see how is the enrichment score of the
 		// decoys:
@@ -91,9 +92,9 @@ public class Fractionation {
 		return ret;
 	}
 
-	public int getSPC(String proteinAcc, boolean skipFilters) throws IOException {
+	public int getSpectralCount(String proteinAcc, boolean skipFilters) throws IOException {
+		Set<PSM> psms = new HashSet<PSM>();
 		if (proteinAccs.contains(proteinAcc)) {
-			int spc = 0;
 			final Set<Protein> proteins = parser.getProteins().get(proteinAcc);
 			for (Protein protein : proteins) {
 				if (!skipFilters) {
@@ -103,19 +104,38 @@ public class Fractionation {
 						}
 					}
 				}
-				spc += protein.getPSMs().size();
+				psms.addAll(protein.getPSMs());
 			}
-			return spc;
+
 		}
-		return 0;
+		return psms.size();
 	}
 
-	public int getSPC(ProteinGroup proteinGroup, boolean skipFilters) throws IOException {
+	public int getPeptideCount(String proteinAcc, boolean skipFilters) throws IOException {
+		Set<String> peptideSequences = new HashSet<String>();
+		if (proteinAccs.contains(proteinAcc)) {
+			final Set<Protein> proteins = parser.getProteins().get(proteinAcc);
+			for (Protein protein : proteins) {
+				if (!skipFilters) {
+					for (Filter filter : filters) {
+						if (!filter.isValid(protein)) {
+							return 0;
+						}
+					}
+				}
+				for (Peptide peptide : protein.getPeptides()) {
+					peptideSequences.add(peptide.getSequence());
+				}
+			}
+
+		}
+		return peptideSequences.size();
+	}
+
+	public int getSpectralCount(ProteinGroup proteinGroup, boolean skipFilters) throws IOException {
 		Set<PSM> psms = new HashSet<PSM>();
 		for (GroupableProtein groupableProtein : proteinGroup) {
-
 			if (proteinAccs.contains(groupableProtein.getAccession())) {
-
 				final Set<Protein> proteins = parser.getProteins().get(groupableProtein.getAccession());
 				for (Protein protein : proteins) {
 					boolean valid = true;
@@ -133,6 +153,31 @@ public class Fractionation {
 			}
 		}
 		return psms.size();
+	}
+
+	public int getPeptideCount(ProteinGroup proteinGroup, boolean skipFilters) throws IOException {
+		Set<String> peptides = new HashSet<String>();
+		for (GroupableProtein groupableProtein : proteinGroup) {
+			if (proteinAccs.contains(groupableProtein.getAccession())) {
+				final Set<Protein> proteins = parser.getProteins().get(groupableProtein.getAccession());
+				for (Protein protein : proteins) {
+					boolean valid = true;
+					if (!skipFilters) {
+						for (Filter filter : filters) {
+							if (!filter.isValid(protein)) {
+								valid = false;
+							}
+						}
+					}
+					if (valid) {
+						for (Peptide peptide : protein.getPeptides()) {
+							peptides.add(peptide.getSequence());
+						}
+					}
+				}
+			}
+		}
+		return peptides.size();
 	}
 
 	/**

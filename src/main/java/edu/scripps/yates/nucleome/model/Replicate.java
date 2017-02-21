@@ -41,12 +41,16 @@ public class Replicate {
 		return fractions.get(cellCompartment);
 	}
 
-	public String printColumnsForProtein(String rawAcc) throws IOException {
+	public String printColumnsForProtein(String rawAcc, boolean peptideCount) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		for (CellCompartment cellCompartment : CellCompartment.values()) {
 			final Fractionation fractionation = getFractionation(cellCompartment);
 			if (fractionation != null) {
-				sb.append(fractionation.getSPC(rawAcc, true));
+				if (peptideCount) {
+					sb.append(fractionation.getPeptideCount(rawAcc, true));
+				} else {
+					sb.append(fractionation.getSpectralCount(rawAcc, true));
+				}
 				sb.append("\t");
 			}
 
@@ -54,12 +58,16 @@ public class Replicate {
 		return sb.toString();
 	}
 
-	public String printColumnsForProteinGroup(ProteinGroup proteinGroup) throws IOException {
+	public String printColumnsForProteinGroup(ProteinGroup proteinGroup, boolean peptideCount) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		for (CellCompartment cellCompartment : CellCompartment.values()) {
 			final Fractionation fractionation = getFractionation(cellCompartment);
 			if (fractionation != null) {
-				sb.append(fractionation.getSPC(proteinGroup, true));
+				if (peptideCount) {
+					sb.append(fractionation.getPeptideCount(proteinGroup, true));
+				} else {
+					sb.append(fractionation.getSpectralCount(proteinGroup, true));
+				}
 				sb.append("\t");
 			}
 

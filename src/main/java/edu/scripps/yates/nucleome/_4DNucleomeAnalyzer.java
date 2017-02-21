@@ -75,9 +75,9 @@ public class _4DNucleomeAnalyzer {
 		Constants.MIN_PEPTIDES_PER_PROTEIN = 1;
 		Constants.MIN_PSM_PER_PROTEIN = 2;
 		Constants.MIN_AVG_SPC = 3;
-		Constants.GO_FILTER = true;
+		Constants.GO_FILTER = false;
 		Constants.cellCompartmentToStudy = CellCompartment.NE;
-		Constants.TESTING = false;
+		Constants.TESTING = true;
 		Constants.ENRICHMENT_SCORE_THRESHOLD = 3;
 		Constants.DATASET_PATHS_FILE = datasetsPathsFile;
 		Constants.USE_GROUPS = true;
@@ -100,6 +100,9 @@ public class _4DNucleomeAnalyzer {
 
 			Pair<String, Double> pair = new Pair<String, Double>(proteinAcc, score);
 			scores.add(pair);
+			if (Constants.TESTING && !Double.isNaN(pair.getSecondElement())) {
+				break;
+			}
 		}
 		log.info("Sorting scores...");
 		// sort them by the score
@@ -131,6 +134,9 @@ public class _4DNucleomeAnalyzer {
 
 			Pair<String, Double> pair = new Pair<String, Double>(proteinGroup.getKey(), score);
 			scores.add(pair);
+			if (Constants.TESTING && !Double.isNaN(pair.getSecondElement())) {
+				break;
+			}
 		}
 		log.info("Sorting scores...");
 		// sort them by the score
@@ -319,10 +325,12 @@ public class _4DNucleomeAnalyzer {
 			// print scores for each cell type
 			final CellType[] values = CellType.values();
 			for (CellType cellType : values) {
-				printScoreDistributions(cellType);
+				printScoreDistributions(cellType, false, true);
+				printScoreDistributions(cellType, true, false);
 			}
 			// print scores for all celltypes together
-			printScoreDistributions(null);
+			printScoreDistributions(null, false, true);
+			printScoreDistributions(null, true, false);
 
 			// compare the scores between U and A
 			PairComparisonReport comparisonReportUA = compareScores(CellType.U, CellType.A);
@@ -388,7 +396,8 @@ public class _4DNucleomeAnalyzer {
 		return ret;
 	}
 
-	private void printScoreDistributions(CellType celltype) throws IOException {
+	private void printScoreDistributions(CellType celltype, boolean peptideCounts, boolean includeRatios)
+			throws IOException {
 		List<Pair<String, Double>> scores = null;
 		if (!Constants.USE_GROUPS) {
 			scores = calculateScores(celltype);
@@ -400,56 +409,20 @@ public class _4DNucleomeAnalyzer {
 		if (celltype != null) {
 			cellTypeName = celltype.name();
 		}
-		File scoreFileOutput = new File(
-				outputFolder.getAbsolutePath() + File.separator + cellTypeName + "_scores_distribution.txt");
+		String pathname = outputFolder.getAbsolutePath() + File.separator + cellTypeName;
+		if (peptideCounts) {
+			pathname += "peptide_counts";
+		} else {
+			pathname += "spec_counts";
+		}
+		pathname += "_scores_distribution.txt";
+		File scoreFileOutput = new File(pathname);
 
 		FileWriter fw = null;
 		try {
 			fw = new FileWriter(scoreFileOutput);
-
+			writeHeaders(fw, celltype, peptideCounts, includeRatios);
 			int num = 1;
-			// write the header
-			fw.write("NUM\tVALID\tACC\tGene\tprotein description\tPROTEIN_EVIDENCE\tSCORE\tKnown NE\tdecoy\t");
-			for (Experiment experimentU : experimentsU) {
-				if (celltype == null || experimentU.getCellType() == celltype) {
-					// print the averages
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						fw.write(experimentU.getName() + "_AVG_SPC_" + cellCompartment.name() + "\t");
-						if (cellCompartment != Constants.cellCompartmentToStudy) {
-							fw.write(experimentU.getName() + "_SPC(" + Constants.cellCompartmentToStudy + ")/SPC("
-									+ cellCompartment + ")\t");
-						}
-					}
-					fw.write(experimentU.printHeader());
-				}
-			}
-			for (Experiment experimentA : experimentsA) {
-				if (celltype == null || experimentA.getCellType() == celltype) {
-					// print the averages
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						fw.write(experimentA.getName() + "_AVG_SPC_" + cellCompartment.name() + "\t");
-						if (cellCompartment != Constants.cellCompartmentToStudy) {
-							fw.write(experimentA.getName() + "_SPC(" + Constants.cellCompartmentToStudy + ")/SPC("
-									+ cellCompartment + ")\t");
-						}
-					}
-					fw.write(experimentA.printHeader());
-				}
-			}
-			for (Experiment experimentM : experimentsM) {
-				if (celltype == null || experimentM.getCellType() == celltype) {
-					// print the averages
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						fw.write(experimentM.getName() + "_AVG_SPC_" + cellCompartment.name() + "\t");
-						if (cellCompartment != Constants.cellCompartmentToStudy) {
-							fw.write(experimentM.getName() + "_SPC(" + Constants.cellCompartmentToStudy + ")/SPC("
-									+ cellCompartment + ")\t");
-						}
-					}
-					fw.write(experimentM.printHeader());
-				}
-			}
-			fw.write("\n");
 			for (Pair<String, Double> pair : scores) {
 				if (!Double.isNaN(pair.getSecondElement())) {
 					String rawAcc = pair.getFirstelement();
@@ -475,31 +448,47 @@ public class _4DNucleomeAnalyzer {
 							// print the averages
 							for (CellCompartment cellCompartment : CellCompartment.values()) {
 								if (Constants.USE_GROUPS) {
-									fw.write(experiment.getAvgSPC(getGroup(rawAcc), cellCompartment, true) + "\t");
+									if (peptideCounts) {
+										fw.write(experiment.getAvgPeptideCount(getGroup(rawAcc), cellCompartment, true)
+												+ "\t");
+									} else {
+										fw.write(experiment.getAvgSpectralCount(getGroup(rawAcc), cellCompartment, true)
+												+ "\t");
+									}
 								} else {
-									fw.write(experiment.getAvgSPC(rawAcc, cellCompartment, true) + "\t");
+									if (peptideCounts) {
+										fw.write(experiment.getAvgPeptideCount(rawAcc, cellCompartment, true) + "\t");
+									} else {
+										fw.write(experiment.getAvgSpectralCount(rawAcc, cellCompartment, true) + "\t");
+									}
 								}
 								if (cellCompartment != Constants.cellCompartmentToStudy) {
-									double spcRatio = Double.NaN;
-									if (Constants.USE_GROUPS) {
-										spcRatio = experiment.getSPCRatio(getGroup(rawAcc),
-												Constants.cellCompartmentToStudy, cellCompartment, true);
-									} else {
-										spcRatio = experiment.getSPCRatio(rawAcc, Constants.cellCompartmentToStudy,
-												cellCompartment, true);
+									if (includeRatios) {
+										double spcRatio = Double.NaN;
+										if (Constants.USE_GROUPS) {
+											spcRatio = experiment.getSPCRatio(getGroup(rawAcc),
+													Constants.cellCompartmentToStudy, cellCompartment, true);
+										} else {
+											spcRatio = experiment.getSPCRatio(rawAcc, Constants.cellCompartmentToStudy,
+													cellCompartment, true);
+										}
+										fw.write(Constants.formatInfinity(ScoringFunction.getLog2Ratio(spcRatio))
+												+ "\t");
 									}
-									fw.write(Constants.formatInfinity(ScoringFunction.getLog2Ratio(spcRatio)) + "\t");
 								}
 							}
 							if (Constants.USE_GROUPS) {
-								fw.write(experiment.printColumnsForProteinGroup(getGroup(rawAcc)));
+								fw.write(experiment.printColumnsForProteinGroup(getGroup(rawAcc), peptideCounts));
 							} else {
-								fw.write(experiment.printColumnsForProtein(rawAcc));
+								fw.write(experiment.printColumnsForProtein(rawAcc, peptideCounts));
 							}
 						}
 					}
 
 					fw.write("\n");
+					if (Constants.TESTING) {
+						break;
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -511,6 +500,38 @@ public class _4DNucleomeAnalyzer {
 			}
 			log.info("File created at " + scoreFileOutput.getAbsolutePath());
 		}
+
+	}
+
+	private void writeHeaders(FileWriter fw, CellType celltype, boolean peptideCounts, boolean includeRatios)
+			throws IOException {
+		String dataType = "SPC";
+		if (peptideCounts) {
+			dataType = "PEPC";
+		}
+		// write the header
+		fw.write("NUM\tVALID\tACC\tGene\tprotein description\tPROTEIN_EVIDENCE\tSCORE\tKnown NE\tdecoy\t");
+		List<Experiment> experimentList = new ArrayList<Experiment>();
+		experimentList.addAll(experimentsU);
+		experimentList.addAll(experimentsA);
+		experimentList.addAll(experimentsM);
+		for (Experiment experiment : experimentList) {
+			if (celltype == null || experiment.getCellType() == celltype) {
+				// print the averages
+				for (CellCompartment cellCompartment : CellCompartment.values()) {
+					fw.write(experiment.getName() + cellCompartment.name() + "_AVG_" + dataType + "\t");
+					if (includeRatios) {
+						if (cellCompartment != Constants.cellCompartmentToStudy) {
+							fw.write(experiment.getName() + Constants.cellCompartmentToStudy + "/"
+									+ experiment.getName() + cellCompartment + "\t");
+						}
+					}
+				}
+				fw.write(experiment.printHeader());
+			}
+		}
+
+		fw.write("\n");
 
 	}
 
