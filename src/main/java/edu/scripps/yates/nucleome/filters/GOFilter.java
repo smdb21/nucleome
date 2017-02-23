@@ -18,10 +18,11 @@ import edu.scripps.yates.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
+import psidev.psi.tools.ontology_manager.interfaces.OntologyTermI;
 
 public class GOFilter implements Filter {
 	private final static Logger log = Logger.getLogger(GOFilter.class);
-	private final static String[] GOToInclude = { "GO:0005635", "GO:0031965", "GO:0090286", "GO:00069980", "GO:0090292",
+	private final static String[] GOToInclude = { "GO:0005635", "GO:0031965", "GO:0090286", "GO:0006998", "GO:0090292",
 			"GO:0005639", "GO:0005638", "GO:0016363", "GO:0048471", "GO:0006997", "GO:1900180", "GO:0035105",
 			"GO:0044614", "GO:0005637", "GO:0005643", "GO:0017056", "GO:0097726" };
 
@@ -39,6 +40,32 @@ public class GOFilter implements Filter {
 
 	private final Set<String> filteredOut = new HashSet<String>();
 	private final String name;
+
+	@Override
+	public String toString() {
+
+		System.out.println(
+				"Inclusion list (Any protein annotated with any of these terms passes the filter even if having another term from the exclusion list):");
+		for (String go : GOFilter.GOToInclude) {
+			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
+			System.out.println(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
+		}
+		System.out.println(
+				"\nExclusion list (Any protein annotated with any of these following terms will be discarded unless having other one from the inclusion list)");
+		for (String go : GOFilter.GOToExclude) {
+
+			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
+			if (goTerm != null) {
+				System.out.println(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
+			}
+		}
+		System.out.println(
+				"\nExclusion list names (Any protein annotated with a GO term containing the following text will be discarded unless it is annotated with any GO term from the inclusion list)");
+		for (String name : GOFilter.GOPartNameToExclude) {
+
+			System.out.println(name);
+		}
+	}
 
 	public GOFilter(String name) {
 		this.name = name;
