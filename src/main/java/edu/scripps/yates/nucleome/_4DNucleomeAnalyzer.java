@@ -75,9 +75,9 @@ public class _4DNucleomeAnalyzer {
 		Constants.MIN_PEPTIDES_PER_PROTEIN = 1;
 		Constants.MIN_PSM_PER_PROTEIN = 2;
 		Constants.MIN_AVG_SPC = 3;
-		Constants.GO_FILTER = false;
+		Constants.GO_FILTER = true;
 		Constants.cellCompartmentToStudy = CellCompartment.NE;
-		Constants.TESTING = true;
+		Constants.TESTING = false;
 		Constants.ENRICHMENT_SCORE_THRESHOLD = 3;
 		Constants.DATASET_PATHS_FILE = datasetsPathsFile;
 		Constants.USE_GROUPS = true;

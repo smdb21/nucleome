@@ -68,30 +68,31 @@ public class PairComparisonReport {
 					+ " in " + cellType1 + "\n");
 			fw.write(getEnriched(scoreMap2).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 					+ " in " + cellType2 + "\n");
-			fw.write(venn.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
-					+ cellType1 + " and not in " + cellType2 + "\n");
-			fw.write(venn.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy + " in "
-					+ cellType2 + " and not in " + cellType1 + "\n");
-			fw.write(venn.getIntersection12().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+			VennData vennData = getVennData();
+			fw.write(vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+					+ " in " + cellType1 + " and not in " + cellType2 + "\n");
+			fw.write(vennData.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+					+ " in " + cellType2 + " and not in " + cellType1 + "\n");
+			fw.write(vennData.getIntersection12().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 					+ " in both " + cellType1 + " and " + cellType2 + "\n\n");
 
 			fw.write("\nCopy and paste this URL to see the graphical representation of the comparison:\n"
-					+ getVennData().getImageURL().toString() + "\n\n");
+					+ vennData.getImageURL().toString() + "\n\n");
 
-			fw.write("\n" + venn.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+			fw.write("\n" + vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 					+ " in " + cellType2 + " and not in " + cellType1 + ":\n");
 			fw.write("#\tACC(s)\tEnrichment_Score\tgene name(s)\tprotein description(s)\n");
-			writeListOfPairs(fw, venn.getUniqueTo1(), scoreMap1);
+			writeListOfPairs(fw, vennData.getUniqueTo1(), scoreMap1);
 
-			fw.write("\n" + venn.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+			fw.write("\n" + vennData.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 					+ " in " + cellType2 + " and not in " + cellType1 + ":\n");
 			fw.write("#\tACC\tEnrichment_Score\tprotein description\n");
-			writeListOfPairs(fw, venn.getUniqueTo2(), scoreMap2);
+			writeListOfPairs(fw, vennData.getUniqueTo2(), scoreMap2);
 
-			fw.write("\n" + venn.getIntersection12().size() + " proteins enriched in "
+			fw.write("\n" + vennData.getIntersection12().size() + " proteins enriched in "
 					+ Constants.cellCompartmentToStudy + " in both " + cellType1 + " and in " + cellType2 + ":\n");
 			fw.write("#\tACC\tDelta_Enrichment_Score (" + cellType1 + "|" + cellType2 + ")\tprotein description\n");
-			writeListOfPairs2(fw, venn.getIntersection12(), scoreMap1, scoreMap2);
+			writeListOfPairs2(fw, vennData.getIntersection12(), scoreMap1, scoreMap2);
 
 		} finally {
 			fw.close();
