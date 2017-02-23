@@ -43,28 +43,29 @@ public class GOFilter implements Filter {
 
 	@Override
 	public String toString() {
-
-		System.out.println(
+		StringBuilder sb = new StringBuilder();
+		sb.append(
 				"Inclusion list (Any protein annotated with any of these terms passes the filter even if having another term from the exclusion list):");
 		for (String go : GOFilter.GOToInclude) {
 			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
-			System.out.println(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
+			sb.append(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
 		}
-		System.out.println(
+		sb.append(
 				"\nExclusion list (Any protein annotated with any of these following terms will be discarded unless having other one from the inclusion list)");
 		for (String go : GOFilter.GOToExclude) {
 
 			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
 			if (goTerm != null) {
-				System.out.println(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
+				sb.append(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
 			}
 		}
-		System.out.println(
+		sb.append(
 				"\nExclusion list names (Any protein annotated with a GO term containing the following text will be discarded unless it is annotated with any GO term from the inclusion list)");
 		for (String name : GOFilter.GOPartNameToExclude) {
 
-			System.out.println(name);
+			sb.append(name);
 		}
+		return sb.toString();
 	}
 
 	public GOFilter(String name) {
