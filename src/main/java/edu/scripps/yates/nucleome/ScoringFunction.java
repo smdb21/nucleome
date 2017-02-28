@@ -20,7 +20,8 @@ public abstract class ScoringFunction {
 		return Math.log(ratio) / Math.log(2);
 	}
 
-	public abstract double getScore(String proteinAcc, CellType celltype) throws IOException;
+	// public abstract double getScore(String proteinAcc, CellType celltype)
+	// throws IOException;
 
 	public abstract double getScore(ProteinGroup proteinGroup, CellType celltype) throws IOException;
 }

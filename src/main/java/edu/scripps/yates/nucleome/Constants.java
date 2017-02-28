@@ -28,7 +28,6 @@ public class Constants {
 	 */
 	public static int ENRICHMENT_SCORE_THRESHOLD;
 	public static String DATASET_PATHS_FILE;
-	public static boolean USE_GROUPS = false;
 
 	public static boolean isDecoy(String rawAcc) {
 		return decoy.matcher(rawAcc).find();

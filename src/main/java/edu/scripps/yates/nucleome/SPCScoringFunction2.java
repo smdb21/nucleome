@@ -11,11 +11,11 @@ import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
 import edu.scripps.yates.utilities.grouping.ProteinGroup;
 
-public class SPCScoringFunction extends ScoringFunction {
-	private final static Logger log = Logger.getLogger(SPCScoringFunction.class);
+public class SPCScoringFunction2 extends ScoringFunction {
+	private final static Logger log = Logger.getLogger(SPCScoringFunction2.class);
 	private final _4DNucleomeAnalyzer analyzer;
 
-	public SPCScoringFunction(_4DNucleomeAnalyzer analyzer) {
+	public SPCScoringFunction2(_4DNucleomeAnalyzer analyzer) {
 		this.analyzer = analyzer;
 	}
 
@@ -42,35 +42,25 @@ public class SPCScoringFunction extends ScoringFunction {
 				if (denominatorCellCompartment == Constants.cellCompartmentToStudy) {
 					continue;
 				}
-
-				// NE/N
-				double spcRatio = experiment.getSPCRatio(proteinGroup, Constants.cellCompartmentToStudy,
-						denominatorCellCompartment, false);
-				if (!Double.isNaN(spcRatio)) {
+				double spcToStudy = experiment.getAvgSpectralCount(proteinGroup, Constants.cellCompartmentToStudy,
+						true);
+				double spcDenominator = experiment.getAvgSpectralCount(proteinGroup, denominatorCellCompartment, true);
+				if (spcToStudy > 0 && spcDenominator > 0) {
 					ratioInThisExperiment = true;
-					double log2Ratio = getLog2Ratio(spcRatio);
-					if (log2Ratio > 10) {
+				}
+				if (spcToStudy >= spcDenominator) {
+					score += 1;
+					if (spcToStudy >= 3 * spcDenominator && spcToStudy > 3) {
 						score += 1;
 					}
-					if (log2Ratio > 3) {
-						score += 1;
-					}
-					if (log2Ratio > 0) {
-						score += 1;
-					}
+				} else {
 					if (Constants.includeNegativeScoring) {
-						if (log2Ratio < 0) {
-							score -= 1;
-						}
-						if (log2Ratio < -3) {
-							score -= 1;
-						}
-						if (log2Ratio < -10) {
+						score -= 1;
+						if (3 * spcToStudy <= spcDenominator && spcDenominator > 3) {
 							score -= 1;
 						}
 					}
 				}
-
 			}
 			if (ratioInThisExperiment) {
 				numExperiments++;

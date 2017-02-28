@@ -77,47 +77,12 @@ public class _4DNucleomeAnalyzer {
 		Constants.MIN_AVG_SPC = 3;
 		Constants.GO_FILTER = true;
 		Constants.cellCompartmentToStudy = CellCompartment.NE;
-		Constants.TESTING = false;
+		Constants.TESTING = true;
 		Constants.ENRICHMENT_SCORE_THRESHOLD = 3;
 		Constants.DATASET_PATHS_FILE = datasetsPathsFile;
-		Constants.USE_GROUPS = true;
 		UniprotProteinRetriever.enableCache = false;
 		////////////////////////////////////////////////////////////
 
-	}
-
-	/**
-	 * Returns a list of pairs (Protein ACC - Score), sorted by the score
-	 *
-	 * @return
-	 * @throws IOException
-	 */
-	private List<Pair<String, Double>> calculateScores(CellType celltype) throws IOException {
-		log.info("Calculating scores for " + proteinAccs.size() + " proteins");
-		List<Pair<String, Double>> scores = new ArrayList<Pair<String, Double>>();
-		for (String proteinAcc : proteinAccs) {
-			double score = scoringFunction.getScore(proteinAcc, celltype);
-
-			Pair<String, Double> pair = new Pair<String, Double>(proteinAcc, score);
-			scores.add(pair);
-			if (Constants.TESTING && !Double.isNaN(pair.getSecondElement())) {
-				break;
-			}
-		}
-		log.info("Sorting scores...");
-		// sort them by the score
-		Collections.sort(scores, new Comparator<Pair<String, Double>>() {
-
-			@Override
-			public int compare(Pair<String, Double> o1, Pair<String, Double> o2) {
-				final int compare = Double.compare(o2.getSecondElement(), o1.getSecondElement());
-				return compare;
-			}
-		});
-		log.info(scores.size() + " scores calculated");
-
-		scoresByCellType.put(celltype, scores);
-		return scores;
 	}
 
 	/**
@@ -209,35 +174,34 @@ public class _4DNucleomeAnalyzer {
 		String[] m3Files = dataPaths.getFiles("M31");
 		String[] m32Files = dataPaths.getFiles("M32");
 
+		Experiment experimentU2 = new Experiment("U2", CellType.U);
+		experimentsU.add(experimentU2);
+		experimentU2.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u2Files[0]));
+		experimentU2.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u2Files[1]));
+		experimentU2.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u2Files[2]));
+		proteinAccs.addAll(experimentU2.getProteinAccs());
+
+		Experiment experimentU3 = new Experiment("U3", CellType.U);
+		experimentsU.add(experimentU3);
+		experimentU3.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u3Files[0]));
+		experimentU3.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u3Files[1]));
+		experimentU3.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u3Files[2]));
+		proteinAccs.addAll(experimentU3.getProteinAccs());
+		Experiment experimentU4 = new Experiment("U4", CellType.U);
+		experimentsU.add(experimentU4);
+		experimentU4.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u4Files[0]));
+		experimentU4.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u4Files[1]));
+		experimentU4.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u4Files[2]));
+		experimentU4.addReplicate(2, CellType.U, CellCompartment.N, getRemoteFile(u42Files[0]));
+		experimentU4.addReplicate(2, CellType.U, CellCompartment.NE, getRemoteFile(u42Files[1]));
+		experimentU4.addReplicate(2, CellType.U, CellCompartment.C, getRemoteFile(u42Files[2]));
+		proteinAccs.addAll(experimentU4.getProteinAccs());
+		Experiment experimentU5 = new Experiment("U5", CellType.U);
+		experimentsU.add(experimentU5);
+		experimentU5.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u5Files[0]));
+		experimentU5.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u5Files[1]));
+		proteinAccs.addAll(experimentU5.getProteinAccs());
 		if (!Constants.TESTING) {
-			Experiment experimentU2 = new Experiment("U2", CellType.U);
-			experimentsU.add(experimentU2);
-			experimentU2.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u2Files[0]));
-			experimentU2.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u2Files[1]));
-			experimentU2.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u2Files[2]));
-			proteinAccs.addAll(experimentU2.getProteinAccs());
-
-			Experiment experimentU3 = new Experiment("U3", CellType.U);
-			experimentsU.add(experimentU3);
-			experimentU3.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u3Files[0]));
-			experimentU3.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u3Files[1]));
-			experimentU3.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u3Files[2]));
-			proteinAccs.addAll(experimentU3.getProteinAccs());
-			Experiment experimentU4 = new Experiment("U4", CellType.U);
-			experimentsU.add(experimentU4);
-			experimentU4.addReplicate(1, CellType.U, CellCompartment.N, getRemoteFile(u4Files[0]));
-			experimentU4.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u4Files[1]));
-			experimentU4.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u4Files[2]));
-			experimentU4.addReplicate(2, CellType.U, CellCompartment.N, getRemoteFile(u42Files[0]));
-			experimentU4.addReplicate(2, CellType.U, CellCompartment.NE, getRemoteFile(u42Files[1]));
-			experimentU4.addReplicate(2, CellType.U, CellCompartment.C, getRemoteFile(u42Files[2]));
-			proteinAccs.addAll(experimentU4.getProteinAccs());
-			Experiment experimentU5 = new Experiment("U5", CellType.U);
-			experimentsU.add(experimentU5);
-			experimentU5.addReplicate(1, CellType.U, CellCompartment.NE, getRemoteFile(u5Files[0]));
-			experimentU5.addReplicate(1, CellType.U, CellCompartment.C, getRemoteFile(u5Files[1]));
-			proteinAccs.addAll(experimentU5.getProteinAccs());
-
 			Experiment experimentA3 = new Experiment("A2", CellType.A);
 			experimentsA.add(experimentA3);
 			experimentA3.addReplicate(1, CellType.A, CellCompartment.N, getRemoteFile(a2Files[0]));
@@ -253,26 +217,27 @@ public class _4DNucleomeAnalyzer {
 			experimentA4.addReplicate(2, CellType.A, CellCompartment.NE, getRemoteFile(a42Files[1]));
 			experimentA4.addReplicate(2, CellType.A, CellCompartment.C, getRemoteFile(a42Files[2]));
 			proteinAccs.addAll(experimentA4.getProteinAccs());
-		}
-		Experiment experimentM1 = new Experiment("M1", CellType.M);
-		experimentsM.add(experimentM1);
-		experimentM1.addReplicate(1, CellType.M, CellCompartment.N, getRemoteFile(m1Files[0]));
-		experimentM1.addReplicate(1, CellType.M, CellCompartment.NE, getRemoteFile(m1Files[1]));
-		experimentM1.addReplicate(1, CellType.M, CellCompartment.C, getRemoteFile(m1Files[2]));
-		experimentM1.addReplicate(2, CellType.M, CellCompartment.N, getRemoteFile(m12Files[0]));
-		experimentM1.addReplicate(2, CellType.M, CellCompartment.NE, getRemoteFile(m12Files[1]));
-		experimentM1.addReplicate(2, CellType.M, CellCompartment.C, getRemoteFile(m12Files[2]));
-		proteinAccs.addAll(experimentM1.getProteinAccs());
-		Experiment experimentM3 = new Experiment("M3", CellType.M);
-		experimentsM.add(experimentM3);
 
-		experimentM3.addReplicate(1, CellType.M, CellCompartment.N, getRemoteFile(m3Files[0]));
-		experimentM3.addReplicate(1, CellType.M, CellCompartment.NE, getRemoteFile(m3Files[1]));
-		experimentM3.addReplicate(1, CellType.M, CellCompartment.C, getRemoteFile(m3Files[2]));
-		experimentM3.addReplicate(2, CellType.M, CellCompartment.N, getRemoteFile(m32Files[0]));
-		experimentM3.addReplicate(2, CellType.M, CellCompartment.NE, getRemoteFile(m32Files[1]));
-		experimentM3.addReplicate(2, CellType.M, CellCompartment.C, getRemoteFile(m32Files[2]));
-		proteinAccs.addAll(experimentM3.getProteinAccs());
+			Experiment experimentM1 = new Experiment("M1", CellType.M);
+			experimentsM.add(experimentM1);
+			experimentM1.addReplicate(1, CellType.M, CellCompartment.N, getRemoteFile(m1Files[0]));
+			experimentM1.addReplicate(1, CellType.M, CellCompartment.NE, getRemoteFile(m1Files[1]));
+			experimentM1.addReplicate(1, CellType.M, CellCompartment.C, getRemoteFile(m1Files[2]));
+			experimentM1.addReplicate(2, CellType.M, CellCompartment.N, getRemoteFile(m12Files[0]));
+			experimentM1.addReplicate(2, CellType.M, CellCompartment.NE, getRemoteFile(m12Files[1]));
+			experimentM1.addReplicate(2, CellType.M, CellCompartment.C, getRemoteFile(m12Files[2]));
+			proteinAccs.addAll(experimentM1.getProteinAccs());
+			Experiment experimentM3 = new Experiment("M3", CellType.M);
+			experimentsM.add(experimentM3);
+
+			experimentM3.addReplicate(1, CellType.M, CellCompartment.N, getRemoteFile(m3Files[0]));
+			experimentM3.addReplicate(1, CellType.M, CellCompartment.NE, getRemoteFile(m3Files[1]));
+			experimentM3.addReplicate(1, CellType.M, CellCompartment.C, getRemoteFile(m3Files[2]));
+			experimentM3.addReplicate(2, CellType.M, CellCompartment.N, getRemoteFile(m32Files[0]));
+			experimentM3.addReplicate(2, CellType.M, CellCompartment.NE, getRemoteFile(m32Files[1]));
+			experimentM3.addReplicate(2, CellType.M, CellCompartment.C, getRemoteFile(m32Files[2]));
+			proteinAccs.addAll(experimentM3.getProteinAccs());
+		}
 		log.info(proteinAccs.size() + " proteins in all experiments");
 
 		long t2 = System.currentTimeMillis();
@@ -314,7 +279,7 @@ public class _4DNucleomeAnalyzer {
 		// choose scoring function
 		long t1 = System.currentTimeMillis();
 		try {
-			scoringFunction = new SPCScoringFunction(this);
+			scoringFunction = new SPCScoringFunction2(this);
 
 			// load data
 			loadDatasets();
@@ -398,12 +363,8 @@ public class _4DNucleomeAnalyzer {
 
 	private void printScoreDistributions(CellType celltype, boolean peptideCounts, boolean includeRatios)
 			throws IOException {
-		List<Pair<String, Double>> scores = null;
-		if (!Constants.USE_GROUPS) {
-			scores = calculateScores(celltype);
-		} else {
-			scores = calculateScoresFromGroups(celltype);
-		}
+		List<Pair<String, Double>> scores = calculateScoresFromGroups(celltype);
+
 		log.info("Printing scores for " + celltype + " to file");
 		String cellTypeName = "UAM";
 		if (celltype != null) {
@@ -447,41 +408,28 @@ public class _4DNucleomeAnalyzer {
 						if (celltype == null || experiment.getCellType() == celltype) {
 							// print the averages
 							for (CellCompartment cellCompartment : CellCompartment.values()) {
-								if (Constants.USE_GROUPS) {
-									if (peptideCounts) {
-										fw.write(experiment.getAvgPeptideCount(getGroup(rawAcc), cellCompartment, true)
-												+ "\t");
-									} else {
-										fw.write(experiment.getAvgSpectralCount(getGroup(rawAcc), cellCompartment, true)
-												+ "\t");
-									}
+
+								if (peptideCounts) {
+									fw.write(experiment.getAvgPeptideCount(getGroup(rawAcc), cellCompartment, true)
+											+ "\t");
 								} else {
-									if (peptideCounts) {
-										fw.write(experiment.getAvgPeptideCount(rawAcc, cellCompartment, true) + "\t");
-									} else {
-										fw.write(experiment.getAvgSpectralCount(rawAcc, cellCompartment, true) + "\t");
-									}
+									fw.write(experiment.getAvgSpectralCount(getGroup(rawAcc), cellCompartment, true)
+											+ "\t");
 								}
+
 								if (cellCompartment != Constants.cellCompartmentToStudy) {
 									if (includeRatios) {
-										double spcRatio = Double.NaN;
-										if (Constants.USE_GROUPS) {
-											spcRatio = experiment.getSPCRatio(getGroup(rawAcc),
-													Constants.cellCompartmentToStudy, cellCompartment, true);
-										} else {
-											spcRatio = experiment.getSPCRatio(rawAcc, Constants.cellCompartmentToStudy,
-													cellCompartment, true);
-										}
+										double spcRatio = experiment.getSPCRatio(getGroup(rawAcc),
+												Constants.cellCompartmentToStudy, cellCompartment, true);
+
 										fw.write(Constants.formatInfinity(ScoringFunction.getLog2Ratio(spcRatio))
 												+ "\t");
 									}
 								}
 							}
-							if (Constants.USE_GROUPS) {
-								fw.write(experiment.printColumnsForProteinGroup(getGroup(rawAcc), peptideCounts));
-							} else {
-								fw.write(experiment.printColumnsForProtein(rawAcc, peptideCounts));
-							}
+
+							fw.write(experiment.printColumnsForProteinGroup(getGroup(rawAcc), peptideCounts));
+
 						}
 					}
 
@@ -537,24 +485,21 @@ public class _4DNucleomeAnalyzer {
 
 	public Set<String> getAccs(String rawAcc) {
 		Set<String> accs = new HashSet<String>();
-		if (Constants.USE_GROUPS) {
-			// remove the [evidence] at the end
-			if (rawAcc.contains("[")) {
-				rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
-			}
-			if (rawAcc.contains(",")) {
-				final String[] split = rawAcc.split(",");
-				for (String acc : split) {
-					accs.add(acc);
-				}
-			} else {
-				accs.add(rawAcc);
+
+		// remove the [evidence] at the end
+		if (rawAcc.contains("[")) {
+			rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
+		}
+		if (rawAcc.contains(",")) {
+			final String[] split = rawAcc.split(",");
+			for (String acc : split) {
+				accs.add(acc);
 			}
 		} else {
-			final String acc = FastaParser.getACC(rawAcc).getFirstelement();
-			accs.add(acc);
+			accs.add(rawAcc);
 		}
 		return accs;
+
 	}
 
 	public String getProteinNameString(String rawAcc) {
@@ -734,26 +679,18 @@ public class _4DNucleomeAnalyzer {
 
 	public boolean isValid(String rawAcc) throws IOException {
 		final Filter goFilter2 = getGOFilter();
-		if (Constants.USE_GROUPS) {
-			final ProteinGroup group = getGroup(rawAcc);
-			if (group != null) {
-				for (GroupableProtein groupableProtein : group) {
-					if (goFilter2 != null && !goFilter2.isValid((Protein) groupableProtein)) {
-						return false;
-					}
 
+		final ProteinGroup group = getGroup(rawAcc);
+		if (group != null) {
+			for (GroupableProtein groupableProtein : group) {
+				if (goFilter2 != null && !goFilter2.isValid((Protein) groupableProtein)) {
+					return false;
 				}
-				return true;
+
 			}
-
-		} else {
-
-			if (goFilter2 != null && !goFilter2.isValid(FastaParser.getACC(rawAcc).getFirstelement())) {
-				return false;
-			}
-
 			return true;
 		}
+
 		return true;
 	}
 }
