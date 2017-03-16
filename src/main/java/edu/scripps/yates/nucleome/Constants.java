@@ -14,7 +14,8 @@ public class Constants {
 	public static boolean includeNegativeScoring = false;
 	public final static UniprotProteinRetriever upr = new UniprotProteinRetriever(null,
 			new File("z:\\share\\Salva\\data\\uniprotKB"), true);
-	public final static Pattern decoy = Pattern.compile("Reverse");
+	public final static String decoy = "Reverse|contaminant";
+	public static Pattern pattern;
 	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE_Control_50.txt";
 	public static final String SEPARATOR = " | ";
 	public static int MIN_PSM_PER_PROTEIN = 2;
@@ -30,12 +31,18 @@ public class Constants {
 	public static String DATASET_PATHS_FILE;
 
 	public static boolean isDecoy(String rawAcc) {
-		return decoy.matcher(rawAcc).find();
+		if (pattern == null) {
+			pattern = Pattern.compile(decoy);
+		}
+		return pattern.matcher(rawAcc).find();
 	}
 
 	public static boolean isDecoy(Set<String> accs) {
+		if (pattern == null) {
+			pattern = Pattern.compile(decoy);
+		}
 		for (String acc : accs) {
-			boolean isDecoy = decoy.matcher(acc).find();
+			boolean isDecoy = pattern.matcher(acc).find();
 			if (isDecoy) {
 				return true;
 			}
