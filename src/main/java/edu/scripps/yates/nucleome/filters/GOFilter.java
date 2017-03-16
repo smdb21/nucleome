@@ -26,16 +26,50 @@ public class GOFilter implements Filter {
 			"GO:0005639", "GO:0005638", "GO:0016363", "GO:0048471", "GO:0006997", "GO:1900180", "GO:0035105",
 			"GO:0044614", "GO:0005637", "GO:0005643", "GO:0017056", "GO:0097726" };
 
-	private final static String[] GOToExclude = { "GO:0035097", "GO:0034708", "GO:1990234", "GO:0016591", "GO:0055029",
-			"GO:0000428", "GO:0030880", "GO:0031248", "GO:1902493", "GO:0016605", "GO:0005667", "GO:0005730",
+	private final static String[] GOToExclude = {
+			// "GO:0035097",
+			// "GO:0034708",
+			// "GO:1990234",
+			"GO:0016591", "GO:0055029", "GO:0000428", "GO:0030880", "GO:0031248", "GO:1902493",
+			// "GO:0016605",
+			"GO:0005667",
+			// "GO:0005730",
 			"GO:0005615", "GO:0044380", "GO:0031012", "GO:0000176", "GO:0101019", "GO:0070062", "GO:1990563",
-			"GO:0000178", "GO:0000177", "GO:0005886", "GO:0010008", "GO:0005681", "GO:0016604", "GO:0005814",
-			"GO:0006397", "GO:0005576", "GO:0035327", "GO:0006397", "GO:0008033", "GO:0008380", "GO:0042995",
-			"GO:0005911", "GO:0006487", "GO:0006508", "GO:0006412", "GO:0042254", "GO:0005925", "GO:0016192",
-			"GO:0006281", "GO:0044822", "GO:0014704", "GO:0006355", "GO:0070062", "GO:0005576" };
-	private final static String[] GOPartNameToExclude = { "Spliceosome", "RNA polymerase II", "neuron", "DNA helicase",
-			"Centrosome", "transcription factor activity", "mitochondrion" };
+			"GO:0000178", "GO:0000177",
+			// "GO:0005886",
+			"GO:0010008", "GO:0005681",
+			// "GO:0016604",
+			"GO:0005814",
+			// "GO:0006397",
+			"GO:0005576", "GO:0035327", "GO:0006397",
+			// "GO:0008033",
+			"GO:0008380", "GO:0042995", "GO:0005911", "GO:0006487", "GO:0006508", "GO:0006412",
+			// "GO:0042254",
+			"GO:0005925", "GO:0016192", "GO:0006281", "GO:0044822", "GO:0014704", "GO:0006355", "GO:0070062",
+			"GO:0005576",
+			// new ones added on 6 Mar 2017
+			"GO:0005746", // mitochondrial respiratory chain
+			"GO:0005743", // mitochondrial inner membrane
+			"GO:0005901", // caveola
+			"GO:0005882", // intermediate filament
+			"GO:0045862", // positive regulation of proteolysis [filters cln6)??
+							// would remove E3
+			"GO:0006614", // SRP-dependent cotranslational protein targeting to
+							// membrane
+			"GO:0006613", // cotranslational protein targeting to membrane
+			"GO:0045047", // protein targeting to ER
+			"GO:0043248", // proteasome assembly
+			"GO:0017048", // Rho GTPase binding
+			"GO:0035023", // regulation of Rho protein signal transduction
+			"GO:0046968", // peptide antigen transport
+			"GO:0005178", // integrin binding
+			"GO:0098640",// integrin binding involved in cell-matrix adhesion
 
+	};
+	private final static String[] GOPartNameToExclude = { "Spliceosome", "RNA polymerase II", // "neuron",
+			"DNA helicase", "Centrosome", "transcription factor activity", // "mitochondrion"
+	};
+	private final static String[] GOPartNameToInclude = { "myosin", "kinesin" };
 	private final static GORetriever goRetriever = new GORetriever(new File("z:\\share\\Salva\\data\\go"));
 
 	private final Set<String> filteredOut = new HashSet<String>();
@@ -114,6 +148,14 @@ public class GOFilter implements Filter {
 					for (String go2 : GOToInclude) {
 						if (goRetriever.containsGOTerm(acc, go2)) {
 							notExclude = true;
+							break;
+						}
+
+					}
+					for (String partNameToInclude : GOPartNameToInclude) {
+						if (goRetriever.containsTermNamePart(acc, partNameToInclude)) {
+							notExclude = true;
+							break;
 						}
 					}
 					if (notExclude) {
