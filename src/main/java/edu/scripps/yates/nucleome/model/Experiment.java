@@ -275,7 +275,6 @@ public class Experiment {
 		}
 		Collections.sort(list, new Comparator<Replicate>() {
 
-			@Override
 			public int compare(Replicate o1, Replicate o2) {
 				return Integer.compare(o1.getReplicateNum(), o2.getReplicateNum());
 			}
