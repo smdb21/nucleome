@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 import edu.scripps.yates.annotations.uniprot.UniprotProteinRetriever;
+import edu.scripps.yates.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.nucleome.filters.Filter;
 import edu.scripps.yates.nucleome.filters.GOFilter;
 import edu.scripps.yates.nucleome.model.CellCompartment;
@@ -30,6 +31,7 @@ import edu.scripps.yates.utilities.grouping.ProteinEvidence;
 import edu.scripps.yates.utilities.grouping.ProteinGroup;
 import edu.scripps.yates.utilities.proteomicsmodel.Gene;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
+import edu.scripps.yates.utilities.proteomicsmodel.ProteinAnnotation;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
 import edu.scripps.yates.utilities.util.Pair;
 
@@ -77,7 +79,7 @@ public class _4DNucleomeAnalyzer {
 		Constants.MIN_AVG_SPC = 3;
 		Constants.GO_FILTER = true;
 		Constants.cellCompartmentToStudy = CellCompartment.NE;
-		Constants.TESTING = true;
+		Constants.TESTING = false;
 		Constants.ENRICHMENT_SCORE_THRESHOLD = 3;
 		Constants.DATASET_PATHS_FILE = datasetsPathsFile;
 		UniprotProteinRetriever.enableCache = false;
@@ -92,16 +94,20 @@ public class _4DNucleomeAnalyzer {
 	 * @throws IOException
 	 */
 	private List<Pair<String, Double>> calculateScoresFromGroups(CellType celltype) throws IOException {
-		log.info("Calculating scores for " + proteinAccs.size() + " proteins");
+		log.info("Calculating scores for " + proteinAccs.size() + " proteins in " + celltype);
 		List<Pair<String, Double>> scores = new ArrayList<Pair<String, Double>>();
 		for (ProteinGroup proteinGroup : getProteinGroups()) {
+			if (proteinGroup.getKey().contains("D3Z008")) {
+				System.out.println(proteinGroup);
+			}
 			double score = scoringFunction.getScore(proteinGroup, celltype);
 
 			Pair<String, Double> pair = new Pair<String, Double>(proteinGroup.getKey(), score);
 			scores.add(pair);
-			if (Constants.TESTING && !Double.isNaN(pair.getSecondElement())) {
-				break;
-			}
+			// if (Constants.TESTING && !Double.isNaN(pair.getSecondElement()))
+			// {
+			// break;
+			// }
 		}
 		log.info("Sorting scores...");
 		// sort them by the score
@@ -384,13 +390,27 @@ public class _4DNucleomeAnalyzer {
 			fw = new FileWriter(scoreFileOutput);
 			writeHeaders(fw, celltype, peptideCounts, includeRatios);
 			int num = 1;
+			int previousPercentaje = 0;
 			for (Pair<String, Double> pair : scores) {
+				int percentage = Double.valueOf(num * 1.0 / scores.size() * 100.0).intValue();
+				if (percentage != previousPercentaje) {
+					previousPercentaje = percentage;
+					log.info(previousPercentaje + "% proteins printed");
+				}
+
 				if (!Double.isNaN(pair.getSecondElement())) {
 					String rawAcc = pair.getFirstelement();
+					if (rawAcc.contains("P29788,Q8K3F2[CONCLUSIVE]")) {
+						log.info(rawAcc);
+					}
 					if (rawAcc.contains("[")) {
 						rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
 					}
+					String rawAccString = getAccessionStringByEvidence(rawAcc);
 					String geneNameString = getGeneNameString(rawAcc);
+					if (geneNameString.toLowerCase().contains("nab2")) {
+						System.out.println(pair);
+					}
 					String proteinNameString = getProteinNameString(rawAcc);
 					// testing
 					if (ControlNE.isControl(rawAcc)) {
@@ -401,9 +421,10 @@ public class _4DNucleomeAnalyzer {
 					}
 					// end testing
 					String valid = isValid(rawAcc) ? "VALID" : "FILTERED";
-					fw.write(num++ + "\t" + valid + "\t" + rawAcc + "\t" + geneNameString + "\t" + proteinNameString
-							+ "\t" + getProteinEvidences(rawAcc) + "\t" + pair.getSecondElement() + "\t"
-							+ ControlNE.isControl(rawAcc) + "\t" + Constants.isDecoy(getAccs(rawAcc)) + "\t");
+					fw.write(num++ + "\t" + valid + "\t" + rawAccString + "\t" + geneNameString + "\t"
+							+ proteinNameString + "\t" + getProteinEvidences(rawAcc) + "\t" + pair.getSecondElement()
+							+ "\t" + ControlNE.isControl(rawAcc) + "\t" + Constants.isDecoy(getAccs(rawAcc)) + "\t"
+							+ getTransmembraneRegion(rawAcc) + "\t");
 					for (Experiment experiment : getAllExperiments()) {
 						if (celltype == null || experiment.getCellType() == celltype) {
 							// print the averages
@@ -434,9 +455,7 @@ public class _4DNucleomeAnalyzer {
 					}
 
 					fw.write("\n");
-					if (Constants.TESTING) {
-						break;
-					}
+
 				}
 			}
 		} catch (Exception e) {
@@ -451,6 +470,127 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
+	private boolean getTransmembraneRegion(String rawAcc) throws IOException {
+
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc);
+		int index = 0;
+		for (String acc : getAccs(rawAcc)) {
+			if (!validArray.get(index++)) {
+				continue;
+			}
+			final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
+			if (annotatedProtein.containsKey(acc)) {
+				final Protein protein2 = annotatedProtein.get(acc);
+				if (protein2 != null) {
+					Set<ProteinAnnotation> annotations = protein2.getAnnotations();
+					for (ProteinAnnotation proteinAnnotation : annotations) {
+						if (proteinAnnotation.getAnnotationType().getKey().equals("transmembrane region")) {
+							return true;
+						}
+					}
+
+				}
+			}
+		}
+		return false;
+	}
+
+	private String getAccessionStringByEvidence(String rawAcc) throws IOException {
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc);
+		int index = 0;
+		StringBuilder sb = new StringBuilder();
+		for (String acc : getAccs(rawAcc)) {
+			if (!validArray.get(index++)) {
+				continue;
+			}
+			if (!"".equals(sb.toString())) {
+				sb.append(Constants.SEPARATOR);
+			}
+			sb.append(acc);
+
+		}
+		return sb.toString();
+	}
+
+	private List<Boolean> filterAccessionsByEvidence(String rawAcc) throws IOException {
+
+		Set<String> accs = getAccs(rawAcc);
+		final Map<String, Entry> uniprotEntries = Constants.upr.getAnnotatedUniprotEntries(accs);
+		ProteinGroup group = getGroup(rawAcc);
+		List<Boolean> ret = new ArrayList<Boolean>();
+		List<Boolean> groupEvidenceArray = new ArrayList<Boolean>();
+		List<Boolean> uniprotEvidenceArray = new ArrayList<Boolean>();
+		// only swissprot is valid
+		boolean thereIsASwissProt = false;
+		boolean thereIsAConclusiveProt = false;
+		for (String acc : accs) {
+			boolean valid = false;
+			try {
+
+				ProteinEvidence evidence = getEvidence(group, acc);
+				if (evidence == ProteinEvidence.CONCLUSIVE) {
+					groupEvidenceArray.add(true);
+					thereIsAConclusiveProt = true;
+
+					valid = true;
+				} else {
+					groupEvidenceArray.add(false);
+					if (uniprotEntries.containsKey(acc)) {
+						final Entry protein2 = uniprotEntries.get(acc);
+						if (protein2 != null) {
+							String dataset = protein2.getDataset();
+							if (dataset != null) {
+								if (dataset.toLowerCase().equals("swiss-prot")) {
+									thereIsASwissProt = true;
+									uniprotEvidenceArray.add(true);
+									valid = true;
+								} else {
+									uniprotEvidenceArray.add(false);
+								}
+							}
+						} else {
+							uniprotEvidenceArray.add(false);
+						}
+					} else {
+						uniprotEvidenceArray.add(false);
+					}
+				}
+			} finally {
+				ret.add(valid);
+			}
+		}
+		boolean allSwissprot = true;
+		for (Boolean uniprotEvidence : uniprotEvidenceArray) {
+			if (!uniprotEvidence) {
+				allSwissprot = false;
+			}
+		}
+
+		if (!thereIsASwissProt && !thereIsAConclusiveProt) {
+			ret.set(0, true);
+		}
+		if (allSwissprot) {
+			if (groupEvidenceArray.size() != accs.size()) {
+				log.info(rawAcc);
+			}
+			// only report the conclusive ones
+			return groupEvidenceArray;
+		}
+		if (ret.size() != accs.size()) {
+			log.info(rawAcc);
+		}
+		return ret;
+	}
+
+	private ProteinEvidence getEvidence(ProteinGroup group, String acc) {
+		for (GroupableProtein groupableProtein : group) {
+			if (groupableProtein.getAccession().equals(acc)) {
+				return groupableProtein.getEvidence();
+			}
+		}
+		return null;
+	}
+
 	private void writeHeaders(FileWriter fw, CellType celltype, boolean peptideCounts, boolean includeRatios)
 			throws IOException {
 		String dataType = "SPC";
@@ -458,7 +598,8 @@ public class _4DNucleomeAnalyzer {
 			dataType = "PEPC";
 		}
 		// write the header
-		fw.write("NUM\tVALID\tACC\tGene\tprotein description\tPROTEIN_EVIDENCE\tSCORE\tKnown NE\tdecoy\t");
+		fw.write(
+				"NUM\tVALID\tACC\tGene\tprotein description\tPROTEIN_EVIDENCE\tSCORE\tKnown NE\tdecoy\tTransmembrane region\t");
 		List<Experiment> experimentList = new ArrayList<Experiment>();
 		experimentList.addAll(experimentsU);
 		experimentList.addAll(experimentsA);
@@ -493,6 +634,9 @@ public class _4DNucleomeAnalyzer {
 		if (rawAcc.contains(",")) {
 			final String[] split = rawAcc.split(",");
 			for (String acc : split) {
+				if (acc.contains("|")) {
+					log.info(rawAcc);
+				}
 				accs.add(acc);
 			}
 		} else {
@@ -502,12 +646,15 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
-	public String getProteinNameString(String rawAcc) {
+	public String getProteinNameString(String rawAcc) throws IOException {
 
 		String proteinName = "";
-
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc);
+		int index = 0;
 		for (String acc : getAccs(rawAcc)) {
-
+			if (!validArray.get(index++)) {
+				continue;
+			}
 			final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
 			if (annotatedProtein.containsKey(acc)) {
 				final Protein protein2 = annotatedProtein.get(acc);
@@ -526,11 +673,15 @@ public class _4DNucleomeAnalyzer {
 		return proteinName;
 	}
 
-	public String getGeneNameString(String rawAcc) {
+	public String getGeneNameString(String rawAcc) throws IOException {
 
 		List<String> geneNames = new ArrayList<String>();
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc);
+		int index = 0;
 		for (String acc : getAccs(rawAcc)) {
-
+			if (!validArray.get(index++)) {
+				continue;
+			}
 			final Map<String, Protein> annotatedProtein = Constants.upr.getAnnotatedProtein(acc);
 			if (annotatedProtein.containsKey(acc)) {
 				final Protein protein2 = annotatedProtein.get(acc);

@@ -71,7 +71,10 @@ public class Experiment {
 				values.add(fractionation.getSpectralCount(proteinAcc, skipFilters));
 			}
 		}
-		return Maths.mean(values.toArray(new Integer[0]));
+		if (!values.isEmpty()) {
+			return Maths.mean(values.toArray(new Integer[0]));
+		}
+		return 0;
 	}
 
 	public double getAvgPeptideCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
@@ -83,7 +86,10 @@ public class Experiment {
 				values.add(fractionation.getPeptideCount(proteinAcc, skipFilters));
 			}
 		}
-		return Maths.mean(values.toArray(new Integer[0]));
+		if (!values.isEmpty()) {
+			return Maths.mean(values.toArray(new Integer[0]));
+		}
+		return 0.0;
 	}
 
 	public double getAvgSpectralCount(ProteinGroup proteinGroup, CellCompartment cellCompartment, boolean skipFilters)
@@ -95,7 +101,10 @@ public class Experiment {
 				values.add(fractionation.getSpectralCount(proteinGroup, skipFilters));
 			}
 		}
-		return Maths.mean(values.toArray(new Integer[0]));
+		if (!values.isEmpty()) {
+			return Maths.mean(values.toArray(new Integer[0]));
+		}
+		return 0.0;
 	}
 
 	public double getAvgPeptideCount(ProteinGroup proteinGroup, CellCompartment cellCompartment, boolean skipFilters)
@@ -107,7 +116,10 @@ public class Experiment {
 				values.add(fractionation.getPeptideCount(proteinGroup, skipFilters));
 			}
 		}
-		return Maths.mean(values.toArray(new Integer[0]));
+		if (!values.isEmpty()) {
+			return Maths.mean(values.toArray(new Integer[0]));
+		}
+		return 0;
 	}
 
 	public double getSumSPC(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)

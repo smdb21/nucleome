@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import edu.scripps.yates.dtaselect.ProteinDTASelectParser;
+import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.nucleome.filters.Filter;
 import edu.scripps.yates.nucleome.filters.PSMPerProtein;
 import edu.scripps.yates.nucleome.filters.PeptidePerProtein;
@@ -34,7 +35,10 @@ public class Fractionation {
 		parser = new ProteinDTASelectParser(name, remote);
 		// removed since we want to see how is the enrichment score of the
 		// decoys:
-		// parser.setDecoyPattern("Reverse|contaminant");
+		if (Constants.decoy != null) {
+			parser.setDecoyPattern(Constants.decoy);
+		}
+
 		this.cellType = cellType;
 		filters = getFilters();
 
