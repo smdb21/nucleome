@@ -2,6 +2,7 @@ package edu.scripps.yates.nucleome;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -9,7 +10,6 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.nucleome.model.CellCompartment;
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
 
 /**
  * This is the second scoring function proposed by LArry. It is based on the SPC
@@ -18,21 +18,18 @@ import edu.scripps.yates.utilities.grouping.ProteinGroup;
  * @author Salva
  *
  */
-public class SPCScoringFunction2 extends ScoringFunction {
-	private final static Logger log = Logger.getLogger(SPCScoringFunction2.class);
+public class SPCScoringFunctionByFoldChangeValue extends ScoringFunction {
+	private final static Logger log = Logger.getLogger(SPCScoringFunctionByFoldChangeValue.class);
 	private final _4DNucleomeAnalyzer analyzer;
 
-	public SPCScoringFunction2(_4DNucleomeAnalyzer analyzer) {
+	public SPCScoringFunctionByFoldChangeValue(_4DNucleomeAnalyzer analyzer) {
 		this.analyzer = analyzer;
 	}
 
 	@Override
-	public double getScore(ProteinGroup proteinGroup, CellType celltype) throws IOException {
+	public double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException {
 		int numExperiments = 0;
 		double score = 0.0;
-		if (proteinGroup.getKey().contains("D3Z008")) {
-			System.out.println(proteinGroup);
-		}
 		List<Experiment> experimentList = new ArrayList<Experiment>();
 		if (celltype == null || celltype == CellType.A) {
 			experimentList.addAll(analyzer.getExperimentsA());
@@ -54,9 +51,10 @@ public class SPCScoringFunction2 extends ScoringFunction {
 				if (denominatorCellCompartment == Constants.cellCompartmentToStudy) {
 					continue;
 				}
-				double spcToStudy = experiment.getAvgSpectralCount(proteinGroup, Constants.cellCompartmentToStudy,
+				double spcToStudy = experiment.getAvgSpectralCount(proteinAccessions, Constants.cellCompartmentToStudy,
 						true);
-				double spcDenominator = experiment.getAvgSpectralCount(proteinGroup, denominatorCellCompartment, true);
+				double spcDenominator = experiment.getAvgSpectralCount(proteinAccessions, denominatorCellCompartment,
+						true);
 				if (spcToStudy > 0 || spcDenominator > 0) {
 					ratioInThisExperiment = true;
 					numComparisons++;

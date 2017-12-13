@@ -1,7 +1,7 @@
 package edu.scripps.yates.nucleome;
 
 import java.io.File;
-import java.util.Set;
+import java.util.Collection;
 import java.util.regex.Pattern;
 
 import edu.scripps.yates.annotations.uniprot.UniprotProteinRetriever;
@@ -11,13 +11,19 @@ public class Constants {
 	public static int MIN_AVG_SPC = 3;
 	public static int MIN_PEPTIDES_PER_PROTEIN = 1;
 	public static boolean GO_FILTER;
+	public static boolean KERATIN_FILTER;
 	public static boolean includeNegativeScoring = false;
 	public final static UniprotProteinRetriever upr = new UniprotProteinRetriever(null,
 			new File("z:\\share\\Salva\\data\\uniprotKB"), true);
 	public final static String decoy = "Reverse|contaminant";
 	public static Pattern pattern;
-	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE_Control_50.txt";
+	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE50 updated 2017_11_21.txt";
 	public static final String SEPARATOR = " | ";
+	public static boolean writeCombinedDistribution = false;
+	public static boolean compareScores = true;
+	public static boolean printScoreDistributions = true;
+	public static int MAX_TEST_PROTEINS = 200000;
+	public static int MIN_TOTAL_SPC = 10;
 	public static int MIN_PSM_PER_PROTEIN = 2;
 	public static boolean TESTING;
 
@@ -27,8 +33,9 @@ public class Constants {
 	 * <br>
 	 * Note that only enriched proteins are considered in the comparisons
 	 */
-	public static int ENRICHMENT_SCORE_THRESHOLD;
+	public static Double ENRICHMENT_SCORE_THRESHOLD;
 	public static String DATASET_PATHS_FILE;
+	public static String[] geneFilter;
 
 	public static boolean isDecoy(String rawAcc) {
 		if (pattern == null) {
@@ -37,7 +44,7 @@ public class Constants {
 		return pattern.matcher(rawAcc).find();
 	}
 
-	public static boolean isDecoy(Set<String> accs) {
+	public static boolean isDecoy(Collection<String> accs) {
 		if (pattern == null) {
 			pattern = Pattern.compile(decoy);
 		}

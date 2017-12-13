@@ -3,8 +3,10 @@ package edu.scripps.yates.nucleome.model;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import edu.scripps.yates.dtaselect.ProteinDTASelectParser;
@@ -12,8 +14,9 @@ import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.nucleome.filters.Filter;
 import edu.scripps.yates.nucleome.filters.PSMPerProtein;
 import edu.scripps.yates.nucleome.filters.PeptidePerProtein;
-import edu.scripps.yates.utilities.grouping.GroupableProtein;
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
+import edu.scripps.yates.utilities.maths.Maths;
+import edu.scripps.yates.utilities.model.enums.AmountType;
+import edu.scripps.yates.utilities.proteomicsmodel.Amount;
 import edu.scripps.yates.utilities.proteomicsmodel.PSM;
 import edu.scripps.yates.utilities.proteomicsmodel.Peptide;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
@@ -27,12 +30,14 @@ public class Fractionation {
 
 	private final List<Filter> filters;
 	private final String name;
+	private Map<String, String> proteinSequences;
 
 	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, RemoteSSHFileReference remote,
 			CellType cellType) throws IOException {
 		this.cellCompartment = cellCompartment;
-		name = experimentName + cellCompartment.name() + "_rep" + num;
+		name = experimentName + "_" + cellCompartment.name() + "_rep" + num;
 		parser = new ProteinDTASelectParser(name, remote);
+		// parser.setSeparateByFractionationStep(false);
 		// removed since we want to see how is the enrichment score of the
 		// decoys:
 		if (Constants.decoy != null) {
@@ -42,6 +47,13 @@ public class Fractionation {
 		this.cellType = cellType;
 		filters = getFilters();
 
+	}
+
+	private Map<String, String> getProteinSequences() {
+		if (proteinSequences == null) {
+			proteinSequences = Constants.upr.getAnnotatedProteinSequence(parser.getProteins().keySet());
+		}
+		return this.proteinSequences;
 	}
 
 	private List<Filter> getFilters() {
@@ -90,6 +102,11 @@ public class Fractionation {
 
 		for (Set<Protein> proteinSet : parser.getProteins().values()) {
 			for (Protein protein : proteinSet) {
+				if (protein.getLength() <= 0) {
+					if (getProteinSequences().containsKey(protein.getAccession())) {
+						protein.setLength(getProteinSequences().get(protein.getAccession()).length());
+					}
+				}
 				ret.add(protein);
 			}
 		}
@@ -98,7 +115,8 @@ public class Fractionation {
 
 	public int getSpectralCount(String proteinAcc, boolean skipFilters) throws IOException {
 		Set<PSM> psms = new HashSet<PSM>();
-		if (proteinAccs.contains(proteinAcc)) {
+
+		if (getProteinAccs().contains(proteinAcc)) {
 			final Set<Protein> proteins = parser.getProteins().get(proteinAcc);
 			for (Protein protein : proteins) {
 				if (!skipFilters) {
@@ -117,7 +135,8 @@ public class Fractionation {
 
 	public int getPeptideCount(String proteinAcc, boolean skipFilters) throws IOException {
 		Set<String> peptideSequences = new HashSet<String>();
-		if (proteinAccs.contains(proteinAcc)) {
+
+		if (getProteinAccs().contains(proteinAcc)) {
 			final Set<Protein> proteins = parser.getProteins().get(proteinAcc);
 			for (Protein protein : proteins) {
 				if (!skipFilters) {
@@ -136,11 +155,16 @@ public class Fractionation {
 		return peptideSequences.size();
 	}
 
-	public int getSpectralCount(ProteinGroup proteinGroup, boolean skipFilters) throws IOException {
+	public int getSpectralCount(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
 		Set<PSM> psms = new HashSet<PSM>();
-		for (GroupableProtein groupableProtein : proteinGroup) {
-			if (proteinAccs.contains(groupableProtein.getAccession())) {
-				final Set<Protein> proteins = parser.getProteins().get(groupableProtein.getAccession());
+		Set<String> accs = new HashSet<String>();
+		for (String proteinAccession : proteinAccessions) {
+			if (accs.contains(proteinAccession)) {
+				continue;
+			}
+			if (getProteinAccs().contains(proteinAccession)) {
+				accs.add(proteinAccession);
+				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
 				for (Protein protein : proteins) {
 					boolean valid = true;
 					if (!skipFilters) {
@@ -159,11 +183,96 @@ public class Fractionation {
 		return psms.size();
 	}
 
-	public int getPeptideCount(ProteinGroup proteinGroup, boolean skipFilters) throws IOException {
+	public double getSumNSAF(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
+		double ret = 0.0;
+		Set<String> accs = new HashSet<String>();
+		for (String proteinAccession : proteinAccessions) {
+			if (accs.contains(proteinAccession)) {
+				continue;
+			}
+			if (getProteinAccs().contains(proteinAccession)) {
+				accs.add(proteinAccession);
+				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
+				for (Protein protein : proteins) {
+					boolean valid = true;
+					if (!skipFilters) {
+						for (Filter filter : filters) {
+							if (!filter.isValid(protein)) {
+								valid = false;
+							}
+						}
+					}
+					if (valid) {
+						Double nsafFromProtein = getNSAFFromProtein(protein);
+						if (nsafFromProtein != null) {
+							ret += nsafFromProtein;
+						}
+					}
+				}
+			}
+		}
+		return ret;
+	}
+
+	public double getAverageNSAF(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
+		List<Double> nsafs = new ArrayList<Double>();
+		Set<String> accs = new HashSet<String>();
+		for (String proteinAccession : proteinAccessions) {
+			if (accs.contains(proteinAccession)) {
+				continue;
+			}
+			if (getProteinAccs().contains(proteinAccession)) {
+				accs.add(proteinAccession);
+				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
+				for (Protein protein : proteins) {
+					// System.out.println(protein);
+					boolean valid = true;
+					if (!skipFilters) {
+						for (Filter filter : filters) {
+							if (!filter.isValid(protein)) {
+								valid = false;
+							}
+						}
+					}
+					if (valid) {
+						Double nsafFromProtein = getNSAFFromProtein(protein);
+						// System.out.println(nsafFromProtein + "\t" +
+						// protein.hashCode());
+						if (nsafFromProtein != null) {
+							nsafs.add(nsafFromProtein);
+						}
+					}
+				}
+			}
+		}
+		if (!nsafs.isEmpty()) {
+			return Maths.mean(nsafs.toArray(new Double[0]));
+		}
+		return 0.0;
+	}
+
+	private Double getNSAFFromProtein(Protein protein) {
+		if (protein != null && protein.getAmounts() != null) {
+			for (Amount amount : protein.getAmounts()) {
+				if (amount.getAmountType() == AmountType.NSAF) {
+					return amount.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
+	public int getPeptideCount(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
 		Set<String> peptides = new HashSet<String>();
-		for (GroupableProtein groupableProtein : proteinGroup) {
-			if (proteinAccs.contains(groupableProtein.getAccession())) {
-				final Set<Protein> proteins = parser.getProteins().get(groupableProtein.getAccession());
+		Set<String> accs = new HashSet<String>();
+
+		for (String proteinAccession : proteinAccessions) {
+			if (accs.contains(proteinAccession)) {
+				continue;
+			}
+			if (getProteinAccs().contains(proteinAccession)) {
+				accs.add(proteinAccession);
+				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
 				for (Protein protein : proteins) {
 					boolean valid = true;
 					if (!skipFilters) {

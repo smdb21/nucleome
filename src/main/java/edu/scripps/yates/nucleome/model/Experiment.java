@@ -3,6 +3,7 @@ package edu.scripps.yates.nucleome.model;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.scripps.yates.nucleome.Constants;
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
@@ -92,13 +92,13 @@ public class Experiment {
 		return 0.0;
 	}
 
-	public double getAvgSpectralCount(ProteinGroup proteinGroup, CellCompartment cellCompartment, boolean skipFilters)
-			throws IOException {
+	public double getAvgSpectralCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
+			boolean skipFilters) throws IOException {
 		List<Integer> values = new ArrayList<Integer>();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				values.add(fractionation.getSpectralCount(proteinGroup, skipFilters));
+				values.add(fractionation.getSpectralCount(proteinAccessions, skipFilters));
 			}
 		}
 		if (!values.isEmpty()) {
@@ -107,13 +107,28 @@ public class Experiment {
 		return 0.0;
 	}
 
-	public double getAvgPeptideCount(ProteinGroup proteinGroup, CellCompartment cellCompartment, boolean skipFilters)
+	public double getAvgNSAF(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
+		List<Double> values = new ArrayList<Double>();
+		for (Replicate replicate : replicates.values()) {
+			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+			if (fractionation != null) {
+				values.add(fractionation.getAverageNSAF(proteinAccessions, skipFilters));
+			}
+		}
+		if (!values.isEmpty()) {
+			return Maths.mean(values.toArray(new Double[0]));
+		}
+		return 0.0;
+	}
+
+	public double getAvgPeptideCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
+			boolean skipFilters) throws IOException {
 		List<Integer> values = new ArrayList<Integer>();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				values.add(fractionation.getPeptideCount(proteinGroup, skipFilters));
+				values.add(fractionation.getPeptideCount(proteinAccessions, skipFilters));
 			}
 		}
 		if (!values.isEmpty()) {
@@ -135,14 +150,27 @@ public class Experiment {
 		return ret;
 	}
 
-	public int getSumSPC(ProteinGroup proteinGroup, CellCompartment cellCompartment, boolean skipFilters)
+	public int getSumSPC(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
 		int ret = 0;
 		for (Replicate replicate : replicates.values()) {
 
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				ret += fractionation.getSpectralCount(proteinGroup, skipFilters);
+				ret += fractionation.getSpectralCount(proteinAccessions, skipFilters);
+			}
+		}
+		return ret;
+	}
+
+	public double getSumNSAF(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
+			throws IOException {
+		double ret = 0;
+		for (Replicate replicate : replicates.values()) {
+
+			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+			if (fractionation != null) {
+				ret += fractionation.getSumNSAF(proteinAccessions, skipFilters);
 			}
 		}
 		return ret;
@@ -165,18 +193,18 @@ public class Experiment {
 		return getNonLog2Ratio(spc1, spc2);
 	}
 
-	public double getSPCRatio(ProteinGroup proteinGroup, CellCompartment cellCompartment1,
+	public double getSPCRatio(Collection<String> proteinAccessions, CellCompartment cellCompartment1,
 			CellCompartment cellCompartment2, boolean skipFilters) throws IOException {
 
-		double spc1 = getSumSPC(proteinGroup, cellCompartment1, skipFilters);
+		double spc1 = getSumSPC(proteinAccessions, cellCompartment1, skipFilters);
 		if (!skipFilters) {
-			if (getAvgSpectralCount(proteinGroup, cellCompartment1, true) < Constants.MIN_AVG_SPC) {
+			if (getAvgSpectralCount(proteinAccessions, cellCompartment1, true) < Constants.MIN_AVG_SPC) {
 				spc1 = 0.0;
 			}
 		}
-		double spc2 = getSumSPC(proteinGroup, cellCompartment2, skipFilters);
+		double spc2 = getSumSPC(proteinAccessions, cellCompartment2, skipFilters);
 		if (!skipFilters) {
-			if (getAvgSpectralCount(proteinGroup, cellCompartment2, true) < Constants.MIN_AVG_SPC) {
+			if (getAvgSpectralCount(proteinAccessions, cellCompartment2, true) < Constants.MIN_AVG_SPC) {
 				spc2 = 0.0;
 			}
 		}
@@ -246,7 +274,7 @@ public class Experiment {
 
 	public List<Replicate> getReplicates() {
 		List<Replicate> ret = new ArrayList<Replicate>();
-		for (int i = 1; i < replicates.size(); i++) {
+		for (int i = 1; i <= replicates.size(); i++) {
 			ret.add(replicates.get(i));
 		}
 		return ret;
@@ -256,10 +284,13 @@ public class Experiment {
 		return replicates;
 	}
 
-	public String printHeader() {
+	public String printHeader(boolean writeMSRunPresence) {
 		StringBuilder sb = new StringBuilder();
 		for (Replicate replicate : getSortedReplicates()) {
 			sb.append(replicate.printHeader());
+		}
+		if (writeMSRunPresence) {
+			sb.append(this.getName() + "_MSRunsPresence\t");
 		}
 		return sb.toString();
 	}
@@ -272,15 +303,17 @@ public class Experiment {
 		return sb.toString();
 	}
 
-	public String printColumnsForProteinGroup(ProteinGroup proteinGroup, boolean peptideCount) throws IOException {
+	public String printColumnsForProteinGroup(Collection<String> proteinAccessions, DataType dataType)
+			throws IOException {
 		StringBuilder sb = new StringBuilder();
 		for (Replicate replicate : getSortedReplicates()) {
-			sb.append(replicate.printColumnsForProteinGroup(proteinGroup, peptideCount));
+			sb.append(replicate.printColumnsForProteinGroup(proteinAccessions, dataType));
 		}
+
 		return sb.toString();
 	}
 
-	private List<Replicate> getSortedReplicates() {
+	public List<Replicate> getSortedReplicates() {
 		List<Replicate> list = new ArrayList<Replicate>();
 		for (Replicate replicate : replicates.values()) {
 			list.add(replicate);
@@ -303,6 +336,22 @@ public class Experiment {
 			ret.addAll(getProteins(cellCompartment));
 		}
 
+		return ret;
+	}
+
+	public int getNumReplicatesWithSPCGreaterThan(Collection<String> proteinAccessions, CellCompartment cellCompartment,
+			int spcThreshold) throws IOException {
+		int ret = 0;
+		List<Replicate> sortedReplicates = getSortedReplicates();
+		for (Replicate replicate : sortedReplicates) {
+			Fractionation fractionation = replicate.getFractionation(cellCompartment);
+			if (fractionation != null) {
+				int spc = fractionation.getSpectralCount(proteinAccessions, true);
+				if (spc > spcThreshold) {
+					ret++;
+				}
+			}
+		}
 		return ret;
 	}
 }

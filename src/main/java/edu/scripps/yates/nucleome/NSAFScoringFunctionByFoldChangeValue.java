@@ -2,6 +2,7 @@ package edu.scripps.yates.nucleome;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -9,18 +10,24 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.nucleome.model.CellCompartment;
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
 
-public class SPCScoringFunction extends ScoringFunction {
-	private final static Logger log = Logger.getLogger(SPCScoringFunction.class);
+/**
+ * This is the second scoring function proposed by LArry. It is based on the
+ * NSAF difference but not the ratio.
+ * 
+ * @author Salva
+ *
+ */
+public class NSAFScoringFunctionByFoldChangeValue extends ScoringFunction {
+	private final static Logger log = Logger.getLogger(NSAFScoringFunctionByFoldChangeValue.class);
 	private final _4DNucleomeAnalyzer analyzer;
 
-	public SPCScoringFunction(_4DNucleomeAnalyzer analyzer) {
+	public NSAFScoringFunctionByFoldChangeValue(_4DNucleomeAnalyzer analyzer) {
 		this.analyzer = analyzer;
 	}
 
 	@Override
-	public double getScore(ProteinGroup proteinGroup, CellType celltype) throws IOException {
+	public double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException {
 		int numExperiments = 0;
 		double score = 0.0;
 		List<Experiment> experimentList = new ArrayList<Experiment>();
@@ -36,42 +43,41 @@ public class SPCScoringFunction extends ScoringFunction {
 
 		// log.info(experimentList.size() + " experiments");
 		for (Experiment experiment : experimentList) {
+			double experimentScore = 0.0;
+			int numComparisons = 0;
 			boolean ratioInThisExperiment = false;
 
 			for (CellCompartment denominatorCellCompartment : CellCompartment.values()) {
 				if (denominatorCellCompartment == Constants.cellCompartmentToStudy) {
 					continue;
 				}
-
-				// NE/N
-				double spcRatio = experiment.getSPCRatio(proteinGroup, Constants.cellCompartmentToStudy,
-						denominatorCellCompartment, false);
-				if (!Double.isNaN(spcRatio)) {
+				double nsafToStudy = experiment.getAvgNSAF(proteinAccessions, Constants.cellCompartmentToStudy, true);
+				double nsafDenominator = experiment.getAvgNSAF(proteinAccessions, denominatorCellCompartment, true);
+				if (nsafToStudy > 0 || nsafDenominator > 0) {
 					ratioInThisExperiment = true;
-					double log2Ratio = getLog2Ratio(spcRatio);
-					if (log2Ratio > 10) {
-						score += 1;
+					numComparisons++;
+				} else if (nsafToStudy == 0 && nsafDenominator == 0) {
+					continue;
+				}
+				if (nsafToStudy >= nsafDenominator) {
+					experimentScore += 1;
+					if (nsafToStudy >= 2 * nsafDenominator && nsafToStudy > 2) {
+						experimentScore += 1;
 					}
-					if (log2Ratio > 3) {
-						score += 1;
-					}
-					if (log2Ratio > 0) {
-						score += 1;
-					}
+				} else {
 					if (Constants.includeNegativeScoring) {
-						if (log2Ratio < 0) {
-							score -= 1;
-						}
-						if (log2Ratio < -3) {
-							score -= 1;
-						}
-						if (log2Ratio < -10) {
-							score -= 1;
+						experimentScore -= 1;
+						if (2 * nsafToStudy <= nsafDenominator && nsafDenominator > 2) {
+							experimentScore -= 1;
 						}
 					}
 				}
-
 			}
+			// normalize by the number of comparisons
+			if (numComparisons > 0) {
+				experimentScore = experimentScore / numComparisons;
+			}
+			score += experimentScore;
 			if (ratioInThisExperiment) {
 				numExperiments++;
 			}

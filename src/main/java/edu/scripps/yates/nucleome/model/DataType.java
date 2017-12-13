@@ -1,11 +1,11 @@
 package edu.scripps.yates.nucleome.model;
 
 /**
- * U, A or M
+ * SPC, PEPC, NSAF
  * 
  * @author Salva
  *
  */
-public enum CellType {
-	U, A, M
+public enum DataType {
+	SPC, PEPC, NSAF
 }

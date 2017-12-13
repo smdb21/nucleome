@@ -1,10 +1,10 @@
 package edu.scripps.yates.nucleome.model;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
 
 /**
@@ -58,16 +58,26 @@ public class Replicate {
 		return sb.toString();
 	}
 
-	public String printColumnsForProteinGroup(ProteinGroup proteinGroup, boolean peptideCount) throws IOException {
+	public String printColumnsForProteinGroup(Collection<String> proteinAccessions, DataType dataType)
+			throws IOException {
 		StringBuilder sb = new StringBuilder();
 		for (CellCompartment cellCompartment : CellCompartment.values()) {
 			final Fractionation fractionation = getFractionation(cellCompartment);
 			if (fractionation != null) {
-				if (peptideCount) {
-					sb.append(fractionation.getPeptideCount(proteinGroup, true));
-				} else {
-					sb.append(fractionation.getSpectralCount(proteinGroup, true));
+				switch (dataType) {
+				case NSAF:
+					sb.append(fractionation.getAverageNSAF(proteinAccessions, true));
+					break;
+				case PEPC:
+					sb.append(fractionation.getPeptideCount(proteinAccessions, true));
+					break;
+				case SPC:
+					sb.append(fractionation.getSpectralCount(proteinAccessions, true));
+					break;
+				default:
+					break;
 				}
+
 				sb.append("\t");
 			}
 

@@ -1,9 +1,9 @@
 package edu.scripps.yates.nucleome;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import edu.scripps.yates.nucleome.model.CellType;
-import edu.scripps.yates.utilities.grouping.ProteinGroup;
 
 public abstract class ScoringFunction {
 	public static double getLog2Ratio(double ratio) {
@@ -23,5 +23,5 @@ public abstract class ScoringFunction {
 	// public abstract double getScore(String proteinAcc, CellType celltype)
 	// throws IOException;
 
-	public abstract double getScore(ProteinGroup proteinGroup, CellType celltype) throws IOException;
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException;
 }

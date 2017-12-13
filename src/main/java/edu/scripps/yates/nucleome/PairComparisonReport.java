@@ -33,19 +33,25 @@ public class PairComparisonReport {
 	public VennData getVennData() throws IOException {
 
 		if (venn == null) {
-			Set<String> enriched1 = getEnriched(scoreMap1);
-			Set<String> enriched2 = getEnriched(scoreMap2);
+			Set<String> enriched1 = getEnriched(scoreMap1, cellType1);
+			Set<String> enriched2 = getEnriched(scoreMap2, cellType2);
+			if (enriched1 == null || enriched2 == null) {
+				return null;
+			}
 			venn = new VennData(cellType1.name() + " vs " + cellType2.name(), cellType1.name(), enriched1,
 					cellType2.name(), enriched2, null, null);
 		}
 		return venn;
 	}
 
-	protected Set<String> getEnriched(Map<String, Double> scoreMap) throws IOException {
+	protected Set<String> getEnriched(Map<String, Double> scoreMap, CellType cellType) throws IOException {
+		if (Constants.ENRICHMENT_SCORE_THRESHOLD == null) {
+			return null;
+		}
 		Set<String> ret = new HashSet<String>();
 		for (String proteinAcc : scoreMap.keySet()) {
 			Double enrichmentScore = scoreMap.get(proteinAcc);
-			if (!this.nucleomeAnalyzer.isValid(proteinAcc)) {
+			if (!this.nucleomeAnalyzer.isValid(proteinAcc, nucleomeAnalyzer.getTotalSPC(proteinAcc, cellType))) {
 				continue;
 			}
 			if (!Double.isNaN(enrichmentScore) && enrichmentScore >= Constants.ENRICHMENT_SCORE_THRESHOLD) {
@@ -62,38 +68,42 @@ public class PairComparisonReport {
 		try {
 			fw = new FileWriter(file);
 			fw.write("Report made on " + new Date() + "\n");
-			fw.write("We consider enriched proteins when having an enrichment score > "
-					+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
-			fw.write(getEnriched(scoreMap1).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType1 + "\n");
-			fw.write(getEnriched(scoreMap2).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType2 + "\n");
+			if (Constants.ENRICHMENT_SCORE_THRESHOLD != null) {
+				fw.write("We consider enriched proteins when having an enrichment score > "
+						+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
+
+				fw.write(getEnriched(scoreMap1, cellType1).size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in " + cellType1 + "\n");
+				fw.write(getEnriched(scoreMap2, cellType2).size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in " + cellType2 + "\n");
+			}
 			VennData vennData = getVennData();
-			fw.write(vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType1 + " and not in " + cellType2 + "\n");
-			fw.write(vennData.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType2 + " and not in " + cellType1 + "\n");
-			fw.write(vennData.getIntersection12().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in both " + cellType1 + " and " + cellType2 + "\n\n");
+			if (vennData != null) {
+				fw.write(vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+						+ " in " + cellType1 + " and not in " + cellType2 + "\n");
+				fw.write(vennData.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
+						+ " in " + cellType2 + " and not in " + cellType1 + "\n");
+				fw.write(vennData.getIntersection12().size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in both " + cellType1 + " and " + cellType2 + "\n\n");
 
-			fw.write("\nCopy and paste this URL to see the graphical representation of the comparison:\n"
-					+ vennData.getImageURL().toString() + "\n\n");
+				fw.write("\nCopy and paste this URL to see the graphical representation of the comparison:\n"
+						+ vennData.getImageURL().toString() + "\n\n");
 
-			fw.write("\n" + vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType2 + " and not in " + cellType1 + ":\n");
-			fw.write("#\tACC(s)\tEnrichment_Score\tgene name(s)\tprotein description(s)\n");
-			writeListOfPairs(fw, vennData.getUniqueTo1(), scoreMap1);
+				fw.write("\n" + vennData.getUniqueTo1().size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in " + cellType2 + " and not in " + cellType1 + ":\n");
+				fw.write("#\tACC(s)\tEnrichment_Score\tgene name(s)\tprotein description(s)\n");
+				writeListOfPairs(fw, vennData.getUniqueTo1(), scoreMap1);
 
-			fw.write("\n" + vennData.getUniqueTo2().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType2 + " and not in " + cellType1 + ":\n");
-			fw.write("#\tACC\tEnrichment_Score\tprotein description\n");
-			writeListOfPairs(fw, vennData.getUniqueTo2(), scoreMap2);
+				fw.write("\n" + vennData.getUniqueTo2().size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in " + cellType2 + " and not in " + cellType1 + ":\n");
+				fw.write("#\tACC\tEnrichment_Score\tprotein description\n");
+				writeListOfPairs(fw, vennData.getUniqueTo2(), scoreMap2);
 
-			fw.write("\n" + vennData.getIntersection12().size() + " proteins enriched in "
-					+ Constants.cellCompartmentToStudy + " in both " + cellType1 + " and in " + cellType2 + ":\n");
-			fw.write("#\tACC\tDelta_Enrichment_Score (" + cellType1 + "|" + cellType2 + ")\tprotein description\n");
-			writeListOfPairs2(fw, vennData.getIntersection12(), scoreMap1, scoreMap2);
-
+				fw.write("\n" + vennData.getIntersection12().size() + " proteins enriched in "
+						+ Constants.cellCompartmentToStudy + " in both " + cellType1 + " and in " + cellType2 + ":\n");
+				fw.write("#\tACC\tDelta_Enrichment_Score (" + cellType1 + "|" + cellType2 + ")\tprotein description\n");
+				writeListOfPairs2(fw, vennData.getIntersection12(), scoreMap1, scoreMap2);
+			}
 		} finally {
 			fw.close();
 		}
@@ -108,8 +118,8 @@ public class PairComparisonReport {
 			String proteinAcc = obj.toString();
 			Double score = scoreMap.get(proteinAcc);
 
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score + "\t" + geneNameString + "\t" + proteinNameString + "\n");
 		}
 	}
@@ -131,8 +141,8 @@ public class PairComparisonReport {
 
 			Double score1 = scoreMap1.get(proteinAcc);
 			Double score2 = scoreMap2.get(proteinAcc);
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score1 + "|" + score2 + "\t" + geneNameString + "\t"
 					+ proteinNameString + "\n");
 		}

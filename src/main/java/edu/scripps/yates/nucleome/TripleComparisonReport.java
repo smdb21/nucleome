@@ -25,12 +25,13 @@ public class TripleComparisonReport extends PairComparisonReport {
 		this.cellType3 = cellType3;
 	}
 
+	@Override
 	public VennData getVennData() throws IOException {
 
 		if (venn == null) {
-			Set<String> enriched1 = getEnriched(scoreMap1);
-			Set<String> enriched2 = getEnriched(scoreMap2);
-			Set<String> enriched3 = getEnriched(scoreMap3);
+			Set<String> enriched1 = getEnriched(scoreMap1, cellType1);
+			Set<String> enriched2 = getEnriched(scoreMap2, cellType2);
+			Set<String> enriched3 = getEnriched(scoreMap3, cellType3);
 			venn = new VennData(cellType1.name() + " vs " + cellType2.name() + " vs " + cellType3.name(),
 					cellType1.name(), enriched1, cellType2.name(), enriched2, cellType3.name(), enriched3);
 		}
@@ -47,12 +48,12 @@ public class TripleComparisonReport extends PairComparisonReport {
 			fw.write("Report made on " + new Date() + "\n");
 			fw.write("We consider enriched proteins when having an enrichment score > "
 					+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
-			fw.write(getEnriched(scoreMap1).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType1 + "\n");
-			fw.write(getEnriched(scoreMap2).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType2 + "\n");
-			fw.write(getEnriched(scoreMap3).size() + " proteins enriched in " + Constants.cellCompartmentToStudy
-					+ " in " + cellType3 + "\n");
+			fw.write(getEnriched(scoreMap1, cellType1).size() + " proteins enriched in "
+					+ Constants.cellCompartmentToStudy + " in " + cellType1 + "\n");
+			fw.write(getEnriched(scoreMap2, cellType2).size() + " proteins enriched in "
+					+ Constants.cellCompartmentToStudy + " in " + cellType2 + "\n");
+			fw.write(getEnriched(scoreMap3, cellType3).size() + " proteins enriched in "
+					+ Constants.cellCompartmentToStudy + " in " + cellType3 + "\n");
 
 			fw.write(getVennData().getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 					+ " in " + cellType1 + " and not in " + cellType2 + " and not in " + cellType3 + "\n");
@@ -105,8 +106,8 @@ public class TripleComparisonReport extends PairComparisonReport {
 			Double score1 = scoreMap1.get(proteinAcc);
 			Double score2 = scoreMap2.get(proteinAcc);
 			Double score3 = scoreMap3.get(proteinAcc);
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score1 + "|" + score2 + "|" + score3 + "\t" + geneNameString
 					+ "\t" + proteinNameString + "\n");
 		}
