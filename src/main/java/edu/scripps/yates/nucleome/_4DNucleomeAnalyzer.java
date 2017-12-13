@@ -96,6 +96,7 @@ public class _4DNucleomeAnalyzer {
 	private static final String datasetsPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\SwissProt_1FDR\\SwissProt_1FDR_data_paths.txt";
 	private static final String datasetsPhosphoPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths_phospho.txt";
 	private final File outputFolder = new File(new File(datasetsPathsFile).getParent() + File.separator + "output");
+
 	private final Map<CellType, List<Pair<String, Double>>> scoresByCellType = new HashMap<CellType, List<Pair<String, Double>>>();
 	private GOFilter goFilter;
 	private KeratinFilter keratinFilter;
