@@ -1,11 +1,12 @@
 package edu.scripps.yates.nucleome.model;
 
 /**
- * NE, N, C
+ * UREA or CARBONATE
+ * 
  * 
  * @author Salva
  *
  */
-public enum CellCompartment {
-	NE, N, CM
+public enum Wash {
+	UREA, CARBONATE, NONE
 }

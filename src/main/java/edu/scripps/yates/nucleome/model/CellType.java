@@ -1,11 +1,11 @@
 package edu.scripps.yates.nucleome.model;
 
 /**
- * U, A or M
+ * U, A or M, or C?
  * 
  * @author Salva
  *
  */
 public enum CellType {
-	U, A, M
+	U, A, M, C, LIVER, C3H
 }

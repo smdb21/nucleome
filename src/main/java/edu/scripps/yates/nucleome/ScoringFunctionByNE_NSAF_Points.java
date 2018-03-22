@@ -12,16 +12,16 @@ import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
 
 /**
- * Calculates the % of SPC that are in NE over N and C
+ * 
  * 
  * @author Salva
  *
  */
-public class ScoringFunctionByNE_NSAF_Percentage extends ScoringFunction {
-	private final static Logger log = Logger.getLogger(ScoringFunctionByNE_NSAF_Percentage.class);
+public class ScoringFunctionByNE_NSAF_Points extends ScoringFunction {
+	private final static Logger log = Logger.getLogger(ScoringFunctionByNE_NSAF_Points.class);
 	private final _4DNucleomeAnalyzer analyzer;
 
-	public ScoringFunctionByNE_NSAF_Percentage(_4DNucleomeAnalyzer analyzer) {
+	public ScoringFunctionByNE_NSAF_Points(_4DNucleomeAnalyzer analyzer) {
 		this.analyzer = analyzer;
 	}
 
@@ -74,5 +74,10 @@ public class ScoringFunctionByNE_NSAF_Percentage extends ScoringFunction {
 		// normalize score
 		score = score / numExperimentsInWhichIsDetected;
 		return score;
+	}
+
+	@Override
+	public String getName() {
+		return "NSAFpoints";
 	}
 }

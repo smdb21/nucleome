@@ -24,4 +24,6 @@ public abstract class ScoringFunction {
 	// throws IOException;
 
 	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException;
+
+	public abstract String getName();
 }

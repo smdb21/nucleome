@@ -22,18 +22,29 @@ public class Experiment {
 	private final CellType cellType;
 	private final Map<Integer, Replicate> replicates = new HashMap<Integer, Replicate>();
 	private Set<String> proteinAccs;
+	private final Wash wash;
 
-	public Experiment(String name, CellType cellType) {
+	public Experiment(String name, Wash wash, CellType cellType) {
 		experimentName = name;
 		this.cellType = cellType;
+		this.wash = wash;
+	}
+
+	public Experiment(String name, CellType cellType) {
+		this(name, null, cellType);
 	}
 
 	public void addReplicate(int num, CellType cellType, CellCompartment cellCompartment, File file)
 			throws IOException {
-		addReplicate(num, cellType, cellCompartment, new RemoteSSHFileReference(file));
+		addReplicate(num, null, cellType, cellCompartment, file);
 	}
 
-	public void addReplicate(int replicateNum, CellType cellType, CellCompartment cellCompartment,
+	public void addReplicate(int num, Wash wash, CellType cellType, CellCompartment cellCompartment, File file)
+			throws IOException {
+		addReplicate(num, wash, cellType, cellCompartment, new RemoteSSHFileReference(file));
+	}
+
+	public void addReplicate(int replicateNum, Wash wash, CellType cellType, CellCompartment cellCompartment,
 			RemoteSSHFileReference remote) throws IOException {
 		if (cellType != this.cellType) {
 			throw new IllegalArgumentException("Different cell types");
@@ -42,10 +53,10 @@ public class Experiment {
 		if (replicates.containsKey(replicateNum)) {
 			replicate = replicates.get(replicateNum);
 		} else {
-			replicate = new Replicate(experimentName, replicateNum, cellType);
+			replicate = new Replicate(experimentName, replicateNum, wash, cellType);
 			replicates.put(replicateNum, replicate);
 		}
-		replicate.setFraction(cellCompartment, remote);
+		replicate.setFraction(cellCompartment, wash, remote);
 	}
 
 	/**
@@ -320,6 +331,7 @@ public class Experiment {
 		}
 		Collections.sort(list, new Comparator<Replicate>() {
 
+			@Override
 			public int compare(Replicate o1, Replicate o2) {
 				return Integer.compare(o1.getReplicateNum(), o2.getReplicateNum());
 			}
@@ -353,4 +365,9 @@ public class Experiment {
 		}
 		return ret;
 	}
+
+	public Wash getWash() {
+		return wash;
+	}
+
 }

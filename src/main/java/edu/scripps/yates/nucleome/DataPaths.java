@@ -74,6 +74,19 @@ public class DataPaths {
 		return arrayPaths;
 	}
 
+	public String getXiFiles(String key) throws IOException {
+		if (!loaded) {
+			load();
+		}
+
+		for (String key2 : paths.keySet()) {
+			if (key2.contains(key)) {
+				return paths.get(key2).replace("/data/2/rpark/ip2_data//", "/ip2_garibaldi/");
+			}
+		}
+		return null;
+	}
+
 	private void load() throws IOException {
 		final Stream<String> linesStream = Files.lines(dataPathsFile.toPath(), Charset.defaultCharset());
 		final List<String> lines = linesStream.collect(Collectors.toList());

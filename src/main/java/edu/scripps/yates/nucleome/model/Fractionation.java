@@ -31,11 +31,22 @@ public class Fractionation {
 	private final List<Filter> filters;
 	private final String name;
 	private Map<String, String> proteinSequences;
+	private final Wash wash;
 
 	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, RemoteSSHFileReference remote,
 			CellType cellType) throws IOException {
+		this(experimentName, num, cellCompartment, remote, cellType, null);
+	}
+
+	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, RemoteSSHFileReference remote,
+			CellType cellType, Wash wash) throws IOException {
 		this.cellCompartment = cellCompartment;
-		name = experimentName + "_" + cellCompartment.name() + "_rep" + num;
+
+		if (wash != null) {
+			name = experimentName + "_" + cellCompartment.name() + "_rep" + num + "_" + wash;
+		} else {
+			name = experimentName + "_" + cellCompartment.name() + "_rep" + num;
+		}
 		parser = new ProteinDTASelectParser(name, remote);
 		// parser.setSeparateByFractionationStep(false);
 		// removed since we want to see how is the enrichment score of the
@@ -45,6 +56,7 @@ public class Fractionation {
 		}
 
 		this.cellType = cellType;
+		this.wash = wash;
 		filters = getFilters();
 
 	}
@@ -67,9 +79,9 @@ public class Fractionation {
 		return filters;
 	}
 
-	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, File file, CellType cellType)
-			throws IOException {
-		this(experimentName, num, cellCompartment, new RemoteSSHFileReference(file), cellType);
+	public Fractionation(String experimentName, int num, CellCompartment cellCompartment, File file, CellType cellType,
+			Wash wash) throws IOException {
+		this(experimentName, num, cellCompartment, new RemoteSSHFileReference(file), cellType, wash);
 	}
 
 	/**
@@ -193,6 +205,10 @@ public class Fractionation {
 			if (getProteinAccs().contains(proteinAccession)) {
 				accs.add(proteinAccession);
 				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
+				// we make the average of them because DTASelect gives us a
+				// protein instance per MSRUN and all of them share the same
+				// NSAF. To sum all up would be redundant.
+				List<Double> toAverage = new ArrayList<Double>();
 				for (Protein protein : proteins) {
 					boolean valid = true;
 					if (!skipFilters) {
@@ -205,10 +221,11 @@ public class Fractionation {
 					if (valid) {
 						Double nsafFromProtein = getNSAFFromProtein(protein);
 						if (nsafFromProtein != null) {
-							ret += nsafFromProtein;
+							toAverage.add(nsafFromProtein);
 						}
 					}
 				}
+				ret += Maths.mean(toAverage.toArray(new Double[0]));
 			}
 		}
 		return ret;
@@ -302,5 +319,9 @@ public class Fractionation {
 
 	public String getName() {
 		return name;
+	}
+
+	public Wash getWash() {
+		return wash;
 	}
 }

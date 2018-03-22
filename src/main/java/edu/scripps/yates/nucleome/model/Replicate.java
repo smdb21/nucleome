@@ -18,15 +18,19 @@ public class Replicate {
 	private final CellType cellType;
 	private final String experimentName;
 	private final Map<CellCompartment, Fractionation> fractions = new HashMap<CellCompartment, Fractionation>();
+	private final Wash wash;
 
-	public Replicate(String experimentName, int replicateNum, CellType cellType) {
+	public Replicate(String experimentName, int replicateNum, Wash wash, CellType cellType) {
 		this.replicateNum = replicateNum;
+		this.wash = wash;
 		this.cellType = cellType;
 		this.experimentName = experimentName;
 	}
 
-	public void setFraction(CellCompartment cellCompartment, RemoteSSHFileReference remote) throws IOException {
-		Fractionation fraction = new Fractionation(experimentName, replicateNum, cellCompartment, remote, cellType);
+	public void setFraction(CellCompartment cellCompartment, Wash wash, RemoteSSHFileReference remote)
+			throws IOException {
+		Fractionation fraction = new Fractionation(experimentName, replicateNum, cellCompartment, remote, cellType,
+				wash);
 		fractions.put(cellCompartment, fraction);
 	}
 
@@ -96,6 +100,10 @@ public class Replicate {
 
 		}
 		return sb.toString();
+	}
+
+	public Wash getWash() {
+		return wash;
 	}
 
 }

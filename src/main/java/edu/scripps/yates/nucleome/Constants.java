@@ -23,7 +23,7 @@ public class Constants {
 	public static boolean compareScores = true;
 	public static boolean printScoreDistributions = true;
 	public static int MAX_TEST_PROTEINS = 200000;
-	public static int MIN_TOTAL_SPC = 10;
+	public static int MIN_TOTAL_SPC = 5;
 	public static int MIN_PSM_PER_PROTEIN = 2;
 	public static boolean TESTING;
 
