@@ -2,6 +2,7 @@ package edu.scripps.yates.nucleome.model;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.scripps.yates.dtaselect.ProteinDTASelectParser;
+import edu.scripps.yates.dtaselect.ProteinImplFromDTASelect;
 import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.nucleome.filters.Filter;
 import edu.scripps.yates.nucleome.filters.PSMPerProtein;
@@ -323,5 +325,44 @@ public class Fractionation {
 
 	public Wash getWash() {
 		return wash;
+	}
+
+	public String getCoverage(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		Set<String> accs = new HashSet<String>();
+		DecimalFormat formatter = new DecimalFormat("#.#");
+		for (String proteinAccession : proteinAccessions) {
+			if (accs.contains(proteinAccession)) {
+				continue;
+			}
+			if (getProteinAccs().contains(proteinAccession)) {
+				accs.add(proteinAccession);
+				final Set<Protein> proteins = parser.getProteins().get(proteinAccession);
+				for (Protein protein : proteins) {
+					boolean valid = true;
+					if (!skipFilters) {
+						for (Filter filter : filters) {
+							if (!filter.isValid(protein)) {
+								valid = false;
+							}
+						}
+					}
+					if (valid) {
+						if (protein instanceof ProteinImplFromDTASelect) {
+							ProteinImplFromDTASelect proteinDTASelect = (ProteinImplFromDTASelect) protein;
+							double coverage = proteinDTASelect.getCoverage();
+							if (!"".equals(sb.toString())) {
+								sb.append(",");
+							}
+							sb.append(formatter.format(coverage) + "%");
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		return sb.toString();
+
 	}
 }

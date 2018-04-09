@@ -19,7 +19,7 @@ public class Constants {
 	public static Pattern pattern;
 	public static final String CONTROL_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\NE50 updated 2017_11_21.txt";
 	public static final String SEPARATOR = " | ";
-	public static final boolean writeCoverageFile = true;
+	public static boolean writeCoverageFile = false;
 	public static boolean writeCombinedDistribution = false;
 	public static boolean compareScores = true;
 	public static boolean printScoreDistributions = true;

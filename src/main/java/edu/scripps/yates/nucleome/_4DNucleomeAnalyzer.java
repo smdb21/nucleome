@@ -62,13 +62,14 @@ public class _4DNucleomeAnalyzer {
 			Constants.MIN_AVG_SPC = 3;
 			Constants.GO_FILTER = false;
 			Constants.cellCompartmentToStudy = CellCompartment.NE;
-			Constants.TESTING = false;
+			Constants.TESTING = true;
 			Constants.ENRICHMENT_SCORE_THRESHOLD = null;// 3.0;
 			Constants.DATASET_PATHS_FILE = datasetsPathsFile;
 			Constants.MIN_TOTAL_SPC = 5;
 			Constants.MAX_TEST_PROTEINS = 200000;
 			Constants.writeCombinedDistribution = false;// UAM
 			Constants.compareScores = false;
+			Constants.writeCoverageFile = true;
 			UniprotProteinRetriever.enableCache = true;
 			scoringFunction = new ScoringFunctionByNE_NSAF_Ratios(analyzer);
 			// scoringFunction = new ScoringFunctionByNE_NSAF_Points(analyzer);
@@ -452,13 +453,18 @@ public class _4DNucleomeAnalyzer {
 
 				// annotate proteins with uniprot
 				annotateProteins(cellType);
-				writeScoreDistributions(cellType);
+				if (!Constants.writeCoverageFile) {
+					writeScoreDistributions(cellType);
+				}
 
 				// writeScoreDistributions(cellType, DataType.NSAF, true &&
 				// Constants.printRatios);
 				// writeScoreDistributions(cellType, DataType.PEPC, false &&
 				// Constants.printRatios);
 
+			}
+			if (Constants.writeCoverageFile) {
+				writeCoverageFile();
 			}
 			// print scores for all celltypes together
 			// writeScoreDistributions(null, DataType.NSAF, true &&
@@ -490,6 +496,65 @@ public class _4DNucleomeAnalyzer {
 		} finally {
 			log.info("It took " + DatesUtil.getDescriptiveTimeFromMillisecs(System.currentTimeMillis() - t1));
 		}
+	}
+
+	private void writeCoverageFile() throws IOException {
+		List<ProteinGroup> proteinGroups = getProteinGroups(null);
+		FileWriter fw = new FileWriter(outputFolder + File.separator + "coverages.txt");
+		// header
+		fw.write("\t");
+		List<Experiment> allExperiments = getAllExperiments();
+		for (Experiment experiment : allExperiments) {
+			List<Replicate> replicates = experiment.getReplicates();
+			for (Replicate replicate : replicates) {
+				for (CellCompartment cellCompartment : CellCompartment.values()) {
+					Fractionation fractionation = replicate.getFractionation(cellCompartment);
+					if (fractionation != null) {
+						fw.write(fractionation.getName() + "\t");
+					}
+				}
+			}
+		}
+		fw.write("\n");
+		for (ProteinGroup proteinGroup : proteinGroups) {
+			if (proteinGroup.getEvidence() == ProteinEvidence.NONCONCLUSIVE) {
+				continue;
+			}
+			String rawAcc = proteinGroup.getKey();
+			List<String> filteredAcessions = new ArrayList<String>();
+			String filteredAcc = getAccessionStringByEvidence(rawAcc, proteinGroup, null);
+			if (filteredAcc.contains(",")) {
+				String[] split = filteredAcc.split(",");
+				for (String acc : split) {
+					filteredAcessions.add(acc);
+				}
+			} else {
+				filteredAcessions.add(filteredAcc);
+			}
+			fw.write(proteinGroup.getKey() + "\t");
+
+			// look into all the experiments
+
+			for (Experiment experiment : allExperiments) {
+				List<Replicate> replicates = experiment.getReplicates();
+				for (Replicate replicate : replicates) {
+					for (CellCompartment cellCompartment : CellCompartment.values()) {
+						Fractionation fractionation = replicate.getFractionation(cellCompartment);
+						if (fractionation != null) {
+							String coverage = fractionation.getCoverage(filteredAcessions, true);
+							fw.write(coverage + "\t");
+						}
+					}
+				}
+
+			}
+
+			fw.write("\n");
+
+		}
+
+		fw.close();
+
 	}
 
 	protected void annotateProteins(CellType cellType) throws IOException {
