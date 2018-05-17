@@ -16,6 +16,7 @@ import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
+import gnu.trove.list.array.TIntArrayList;
 
 public class Experiment {
 	private final String experimentName;
@@ -75,7 +76,7 @@ public class Experiment {
 
 	public double getAvgSpectralCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
-		List<Integer> values = new ArrayList<Integer>();
+		TIntArrayList values = new TIntArrayList();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -83,14 +84,14 @@ public class Experiment {
 			}
 		}
 		if (!values.isEmpty()) {
-			return Maths.mean(values.toArray(new Integer[0]));
+			return Maths.mean(values);
 		}
 		return 0;
 	}
 
 	public double getAvgPeptideCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
-		List<Integer> values = new ArrayList<Integer>();
+		TIntArrayList values = new TIntArrayList();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -98,14 +99,14 @@ public class Experiment {
 			}
 		}
 		if (!values.isEmpty()) {
-			return Maths.mean(values.toArray(new Integer[0]));
+			return Maths.mean(values);
 		}
 		return 0.0;
 	}
 
 	public double getAvgSpectralCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
-		List<Integer> values = new ArrayList<Integer>();
+		TIntArrayList values = new TIntArrayList();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -113,7 +114,7 @@ public class Experiment {
 			}
 		}
 		if (!values.isEmpty()) {
-			return Maths.mean(values.toArray(new Integer[0]));
+			return Maths.mean(values);
 		}
 		return 0.0;
 	}
@@ -135,7 +136,7 @@ public class Experiment {
 
 	public double getAvgPeptideCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
-		List<Integer> values = new ArrayList<Integer>();
+		TIntArrayList values = new TIntArrayList();
 		for (Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -143,7 +144,7 @@ public class Experiment {
 			}
 		}
 		if (!values.isEmpty()) {
-			return Maths.mean(values.toArray(new Integer[0]));
+			return Maths.mean(values);
 		}
 		return 0;
 	}
