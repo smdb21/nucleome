@@ -371,4 +371,8 @@ public class Experiment {
 		return wash;
 	}
 
+	@Override
+	public String toString() {
+		return getName();
+	}
 }

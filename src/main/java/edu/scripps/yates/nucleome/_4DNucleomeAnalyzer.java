@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +27,7 @@ import edu.scripps.yates.nucleome.model.ControlNE;
 import edu.scripps.yates.nucleome.model.Experiment;
 import edu.scripps.yates.nucleome.model.Fractionation;
 import edu.scripps.yates.nucleome.model.Replicate;
+import edu.scripps.yates.nucleome.model.Wash;
 import edu.scripps.yates.utilities.dates.DatesUtil;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.grouping.GroupablePSM;
@@ -43,6 +42,8 @@ import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.proteomicsmodel.ProteinAnnotation;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
 import edu.scripps.yates.utilities.util.Pair;
+import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 
 public class _4DNucleomeAnalyzer {
@@ -90,27 +91,27 @@ public class _4DNucleomeAnalyzer {
 	private final List<Experiment> experimentsA = new ArrayList<Experiment>();
 	private final List<Experiment> experimentsM = new ArrayList<Experiment>();
 	protected static ScoringFunction scoringFunction;
-	private final String hostName = "jaina.scripps.edu";;
+	private final String hostName = "garibaldi.scripps.edu";;
 	private final String userName = "salvador";
-	private final String pass = "Natjeija21";
+	private final String pass;
 	private final String remotefileName = "DTASelect-filter.txt";
 	protected static String datasetsPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\SwissProt_1FDR\\SwissProt_1FDR_data_paths.txt";
 
 	private static String datasetsPhosphoPathsFile = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths_phospho.txt";
 	protected static File outputFolder = new File(new File(datasetsPathsFile).getParent() + File.separator + "output");
 
-	private final Map<CellType, List<Pair<String, Double>>> scoresByCellType = new HashMap<CellType, List<Pair<String, Double>>>();
+	private final Map<CellType, List<Pair<String, Double>>> scoresByCellType = new THashMap<CellType, List<Pair<String, Double>>>();
 	private GOFilter goFilter;
 	private KeratinFilter keratinFilter;
 	private int fileNum = 1;
 	protected List<ProteinGroup> proteinGroups;
-	protected HashSet<String> proteinAccs;
-	protected Map<String, Integer> totalSPCs = new HashMap<String, Integer>();
-	protected Map<String, ProteinGroup> groupsByRawAcc = new HashMap<String, ProteinGroup>();
+	protected Set<String> proteinAccs;
+	protected TObjectIntHashMap<String> totalSPCs = new TObjectIntHashMap<String>();
+	protected Map<String, ProteinGroup> groupsByRawAcc = new THashMap<String, ProteinGroup>();
 	protected Set<GroupableProtein> groupableProteins = new THashSet<GroupableProtein>();
 
-	public _4DNucleomeAnalyzer() throws IOException {
-
+	public _4DNucleomeAnalyzer(String pass) throws IOException {
+		this.pass = pass;
 	}
 
 	/**
@@ -119,17 +120,18 @@ public class _4DNucleomeAnalyzer {
 	 * @return
 	 * @throws IOException
 	 */
-	private List<Pair<String, Double>> calculateScoresFromGroups(CellType celltype) throws IOException {
-		log.info("Calculating scores for " + getAllAccs(celltype).size() + " proteins in " + celltype);
+	private List<Pair<String, Double>> calculateScoresFromGroups(CellType celltype, Wash wash) throws IOException {
+		log.info("Calculating scores for " + getAllAccs(celltype).size() + " proteins in " + celltype + " Wash: "
+				+ wash);
 		List<Pair<String, Double>> scores = new ArrayList<Pair<String, Double>>();
-		List<ProteinGroup> proteinGroups = getProteinGroups(celltype);
+		List<ProteinGroup> proteinGroups = getProteinGroups(celltype, wash);
 		for (ProteinGroup proteinGroup : proteinGroups) {
 			if (proteinGroup.getEvidence() == ProteinEvidence.NONCONCLUSIVE) {
 				continue;
 			}
 			String rawAcc = proteinGroup.getKey();
 			List<String> filteredAcessions = new ArrayList<String>();
-			String filteredAcc = getAccessionStringByEvidence(rawAcc, proteinGroup, celltype);
+			String filteredAcc = getAccessionStringByEvidence(rawAcc, proteinGroup, celltype, wash);
 			if (filteredAcc.contains(",")) {
 				String[] split = filteredAcc.split(",");
 				for (String acc : split) {
@@ -138,7 +140,7 @@ public class _4DNucleomeAnalyzer {
 			} else {
 				filteredAcessions.add(filteredAcc);
 			}
-			double score = scoringFunction.getScore(filteredAcessions, celltype);
+			double score = scoringFunction.getScore(filteredAcessions, celltype, wash);
 
 			Pair<String, Double> pair = new Pair<String, Double>(filteredAcc, score);
 			scores.add(pair);
@@ -158,7 +160,7 @@ public class _4DNucleomeAnalyzer {
 					}
 
 					double score1 = o1.getSecondElement();
-					int totalSPC1 = getTotalSPC(rawAcc1, celltype);
+					int totalSPC1 = getTotalSPC(rawAcc1, celltype, wash);
 					boolean valid1 = isValid(rawAcc1, totalSPC1) ? true : false;
 					//
 					String rawAcc2 = o2.getFirstelement();
@@ -166,7 +168,7 @@ public class _4DNucleomeAnalyzer {
 						rawAcc2 = rawAcc2.substring(0, rawAcc2.indexOf("["));
 					}
 					double score2 = o2.getSecondElement();
-					int totalSPC2 = getTotalSPC(rawAcc2, celltype);
+					int totalSPC2 = getTotalSPC(rawAcc2, celltype, wash);
 					boolean valid2 = isValid(rawAcc2, totalSPC2) ? true : false;
 					//
 
@@ -195,12 +197,12 @@ public class _4DNucleomeAnalyzer {
 		return scores;
 	}
 
-	private List<ProteinGroup> getProteinGroups(CellType cellType) throws IOException {
+	private List<ProteinGroup> getProteinGroups(CellType cellType, Wash wash) throws IOException {
 		if (proteinGroups == null) {
 			PAnalyzer panalyzer = new PAnalyzer(true);
-			Set<GroupableProtein> groupableProteins = getAllGroupableProteins(cellType);
+			Set<GroupableProtein> groupableProteins = getAllGroupableProteins(cellType, wash);
 
-			log.info("Grouping " + groupableProteins.size() + " proteins from " + cellType);
+			log.info("Grouping " + groupableProteins.size() + " proteins from " + cellType + " ans wash " + wash);
 			List<ProteinGroup> proteinGroupsTMP = panalyzer.run(groupableProteins);
 			log.info(proteinGroupsTMP.size() + " protein groups");
 			proteinGroups = new ArrayList<ProteinGroup>();
@@ -214,10 +216,13 @@ public class _4DNucleomeAnalyzer {
 		return proteinGroups;
 	}
 
-	private Set<GroupableProtein> getAllGroupableProteins(CellType cellType) throws IOException {
+	private Set<GroupableProtein> getAllGroupableProteins(CellType cellType, Wash wash) throws IOException {
 		if (groupableProteins.isEmpty()) {
 			for (Experiment experiment : getAllExperiments()) {
 				if (cellType != null && !experiment.getCellType().equals(cellType)) {
+					continue;
+				}
+				if (wash != null && !experiment.getWash().equals(wash)) {
 					continue;
 				}
 				for (Protein protein : experiment.getProteins()) {
@@ -421,6 +426,21 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
+	protected File getRemoteFile(Pair<String, String> remotePath) throws IOException {
+		File localFile = new File(outputFolder + File.separator + "data_files" + File.separator
+				+ FilenameUtils.getBaseName(remotePath.getSecondElement() + remotePath.getFirstelement()) + "."
+				+ FilenameUtils.getExtension(remotefileName));
+		if (localFile.exists() && localFile.length() > 0) {
+			return localFile;
+		}
+		RemoteSSHFileReference ret = new RemoteSSHFileReference(hostName, userName, pass, remotefileName, null);
+		ret.setRemotePath(remotePath.getSecondElement());
+
+		ret.setOutputFile(localFile);
+		File remoteFile = ret.getRemoteFile();
+		return remoteFile;
+	}
+
 	protected File getRemoteFile(String remotePath) throws IOException {
 		File localFile = new File(outputFolder + File.separator + "data_files" + File.separator
 				+ FilenameUtils.getBaseName(remotePath + remotefileName) + "_" + fileNum++ + "."
@@ -432,7 +452,8 @@ public class _4DNucleomeAnalyzer {
 		ret.setRemotePath(remotePath);
 
 		ret.setOutputFile(localFile);
-		return ret.getRemoteFile();
+		File remoteFile = ret.getRemoteFile();
+		return remoteFile;
 	}
 
 	public void run() throws IOException {
@@ -444,24 +465,25 @@ public class _4DNucleomeAnalyzer {
 			// print scores for each cell type
 			final CellType[] values = CellType.values();
 			for (CellType cellType : values) {
-				// restart field variables
-				proteinAccs = null;
-				proteinGroups = null;
-				totalSPCs.clear();
-				groupsByRawAcc.clear();
-				groupableProteins.clear();
+				for (Wash wash : Wash.values()) {
+					// restart field variables
+					proteinAccs = null;
+					proteinGroups = null;
+					totalSPCs.clear();
+					groupsByRawAcc.clear();
+					groupableProteins.clear();
 
-				// annotate proteins with uniprot
-				annotateProteins(cellType);
-				if (!Constants.writeCoverageFile) {
-					writeScoreDistributions(cellType);
+					// annotate proteins with uniprot
+					annotateProteins(cellType);
+					if (!Constants.writeCoverageFile) {
+						writeScoreDistributions(cellType, wash);
+					}
+
+					// writeScoreDistributions(cellType, DataType.NSAF, true &&
+					// Constants.printRatios);
+					// writeScoreDistributions(cellType, DataType.PEPC, false &&
+					// Constants.printRatios);
 				}
-
-				// writeScoreDistributions(cellType, DataType.NSAF, true &&
-				// Constants.printRatios);
-				// writeScoreDistributions(cellType, DataType.PEPC, false &&
-				// Constants.printRatios);
-
 			}
 			if (Constants.writeCoverageFile) {
 				writeCoverageFile();
@@ -470,26 +492,27 @@ public class _4DNucleomeAnalyzer {
 			// writeScoreDistributions(null, DataType.NSAF, true &&
 			// Constants.printRatios);
 			if (Constants.writeCombinedDistribution) {
-				writeScoreDistributions(null);
+				writeScoreDistributions(null, null);
 			}
 			// writeScoreDistributions(null, DataType.PEPC, false &&
 			// Constants.printRatios);
 
 			if (Constants.compareScores) {
 				// compare the scores between U and A
-				PairComparisonReport comparisonReportUA = compareScores(CellType.U, CellType.A);
+				PairComparisonReport comparisonReportUA = compareScores(CellType.U, null, CellType.A, null);
 				comparisonReportUA.printToFile(
 						new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_comparison.txt"));
 				// compare the scores between U and M
-				PairComparisonReport comparisonReportUM = compareScores(CellType.U, CellType.M);
+				PairComparisonReport comparisonReportUM = compareScores(CellType.U, null, CellType.M, null);
 				comparisonReportUM.printToFile(
 						new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_M_comparison.txt"));
 				// compare the scores between A and M
-				PairComparisonReport comparisonReportAM = compareScores(CellType.A, CellType.M);
+				PairComparisonReport comparisonReportAM = compareScores(CellType.A, null, CellType.M, null);
 				comparisonReportAM.printToFile(
 						new File(outputFolder.getAbsolutePath() + File.separator + "A_vs_M_comparison.txt"));
 				// compare the scores between U and A and M
-				TripleComparisonReport comparisonReportUAM = compareScores(CellType.U, CellType.A, CellType.M);
+				TripleComparisonReport comparisonReportUAM = compareScores(CellType.U, null, CellType.A, null,
+						CellType.M, null);
 				comparisonReportUAM.printToFile(
 						new File(outputFolder.getAbsolutePath() + File.separator + "U_vs_A_vs_M_comparison.txt"));
 			}
@@ -499,7 +522,7 @@ public class _4DNucleomeAnalyzer {
 	}
 
 	private void writeCoverageFile() throws IOException {
-		List<ProteinGroup> proteinGroups = getProteinGroups(null);
+		List<ProteinGroup> proteinGroups = getProteinGroups(null, null);
 		FileWriter fw = new FileWriter(outputFolder + File.separator + "coverages.txt");
 		// header
 		fw.write("\t");
@@ -522,7 +545,7 @@ public class _4DNucleomeAnalyzer {
 			}
 			String rawAcc = proteinGroup.getKey();
 			List<String> filteredAcessions = new ArrayList<String>();
-			String filteredAcc = getAccessionStringByEvidence(rawAcc, proteinGroup, null);
+			String filteredAcc = getAccessionStringByEvidence(rawAcc, proteinGroup, null, null);
 			if (filteredAcc.contains(",")) {
 				String[] split = filteredAcc.split(",");
 				for (String acc : split) {
@@ -558,7 +581,7 @@ public class _4DNucleomeAnalyzer {
 	}
 
 	protected void annotateProteins(CellType cellType) throws IOException {
-		Set<String> uniprotAccs = new HashSet<String>();
+		Set<String> uniprotAccs = new THashSet<String>();
 		for (String rawAcc : getAllAccs(cellType)) {
 			String uniprotAcc = FastaParser.getUniProtACC(rawAcc);
 			if (uniprotAcc == null) {
@@ -573,38 +596,40 @@ public class _4DNucleomeAnalyzer {
 		log.info(annotatedProteins.size() + " proteins annotated out of " + uniprotAccs.size());
 	}
 
-	private PairComparisonReport compareScores(CellType cellType1, CellType cellType2) {
+	private PairComparisonReport compareScores(CellType cellType1, Wash wash1, CellType cellType2, Wash wash2) {
 		log.info(" Comparing " + cellType1 + " with " + cellType2);
 		final List<Pair<String, Double>> scores1 = scoresByCellType.get(cellType1);
 		Map<String, Double> scoreMap1 = getScoreMap(scores1);
 		final List<Pair<String, Double>> scores2 = scoresByCellType.get(cellType2);
 		Map<String, Double> scoreMap2 = getScoreMap(scores2);
-		return new PairComparisonReport(this, cellType1, scoreMap1, cellType2, scoreMap2);
+		return new PairComparisonReport(this, cellType1, wash1, scoreMap1, cellType2, wash2, scoreMap2);
 	}
 
-	private TripleComparisonReport compareScores(CellType cellType1, CellType cellType2, CellType cellType3) {
+	private TripleComparisonReport compareScores(CellType cellType1, Wash wash1, CellType cellType2, Wash wash2,
+			CellType cellType3, Wash wash3) {
 		final List<Pair<String, Double>> scores1 = scoresByCellType.get(cellType1);
 		Map<String, Double> scoreMap1 = getScoreMap(scores1);
 		final List<Pair<String, Double>> scores2 = scoresByCellType.get(cellType2);
 		Map<String, Double> scoreMap2 = getScoreMap(scores2);
 		final List<Pair<String, Double>> scores3 = scoresByCellType.get(cellType3);
 		Map<String, Double> scoreMap3 = getScoreMap(scores3);
-		return new TripleComparisonReport(this, cellType1, scoreMap1, cellType2, scoreMap2, cellType3, scoreMap3);
+		return new TripleComparisonReport(this, cellType1, wash1, scoreMap1, cellType2, wash2, scoreMap2, cellType3,
+				wash3, scoreMap3);
 	}
 
 	private Map<String, Double> getScoreMap(List<Pair<String, Double>> scoreList) {
-		Map<String, Double> ret = new HashMap<String, Double>();
+		Map<String, Double> ret = new THashMap<String, Double>();
 		for (Pair<String, Double> pair : scoreList) {
 			ret.put(pair.getFirstelement(), pair.getSecondElement());
 		}
 		return ret;
 	}
 
-	protected void writeScoreDistributions(CellType celltype) throws IOException {
+	protected void writeScoreDistributions(CellType celltype, Wash wash) throws IOException {
 		if (!Constants.printScoreDistributions) {
 			return;
 		}
-		List<Pair<String, Double>> scores = calculateScoresFromGroups(celltype);
+		List<Pair<String, Double>> scores = calculateScoresFromGroups(celltype, wash);
 
 		log.info("Printing scores for " + celltype + " to file");
 		String cellTypeName = "UAM";
@@ -612,8 +637,8 @@ public class _4DNucleomeAnalyzer {
 			cellTypeName = celltype.name();
 		}
 		String formatedDate = DateFormatUtils.format(new Date(), "yyyy-MM-dd_HH-mm");
-		String pathname = outputFolder.getAbsolutePath() + File.separator + formatedDate + "_" + cellTypeName
-				+ "_scores_distribution_" + scoringFunction.getName() + ".txt";
+		String pathname = outputFolder.getAbsolutePath() + File.separator + formatedDate + "_" + cellTypeName + "_"
+				+ wash + "_scores_distribution_" + scoringFunction.getName() + ".txt";
 
 		File scoreFileOutput = new File(pathname);
 		if (!scoreFileOutput.getParentFile().exists()) {
@@ -627,7 +652,7 @@ public class _4DNucleomeAnalyzer {
 		try {
 			ProgressCounter counter = new ProgressCounter(scores.size(), ProgressPrintingType.PERCENTAGE_STEPS, 0);
 			fw = new FileWriter(scoreFileOutput);
-			writeHeaders(fw, celltype);
+			writeHeaders(fw, celltype, wash);
 			int num = 1;
 			for (Pair<String, Double> pair : scores) {
 				counter.increment();
@@ -643,7 +668,7 @@ public class _4DNucleomeAnalyzer {
 					if (rawAcc.contains("[")) {
 						rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
 					}
-					String rawAccString = getAccessionStringByEvidence(rawAcc, null, celltype);
+					String rawAccString = getAccessionStringByEvidence(rawAcc, null, celltype, wash);
 					if (rawAccString.equals("Q91W53")) {
 						log.info(rawAcc);
 					}
@@ -651,31 +676,33 @@ public class _4DNucleomeAnalyzer {
 					String geneNameString = null;
 					// TODO
 					// if (false) {
-					geneNameString = getGeneNameString(rawAcc, celltype);
+					geneNameString = getGeneNameString(rawAcc, celltype, wash);
 					// }
 
-					String proteinNameString = getProteinNameString(rawAcc, celltype);
+					String proteinNameString = getProteinNameString(rawAcc, celltype, wash);
 					double score = pair.getSecondElement();
 					// end testing
-					int totalSPC = getTotalSPC(rawAcc, celltype);
+					int totalSPC = getTotalSPC(rawAcc, celltype, wash);
 					String valid = isValid(rawAcc, totalSPC) ? "VALID" : "FILTERED";
 
 					fw.write(num++ + "\t" + valid + "\t" + rawAccString + "\t" + geneNameString + "\t"
-							+ proteinNameString + "\t" + getFilteredProteinEvidences(rawAcc, celltype) + "\t" + score
-							+ "\t" + ControlNE.isControl(rawAcc) + "\t" + getTransmembraneRegion(rawAcc, celltype)
-							+ "\t" + totalSPC + "\t");
+							+ proteinNameString + "\t" + getFilteredProteinEvidences(rawAcc, celltype, wash) + "\t"
+							+ score + "\t" + ControlNE.isControl(rawAcc) + "\t"
+							+ getTransmembraneRegion(rawAcc, celltype, wash) + "\t" + totalSPC + "\t");
 					if (celltype != null) {
 						for (Experiment experiment : getAllExperiments()) {
 							if (experiment.getCellType() == celltype) {
-								// print the averages
-								for (CellCompartment cellCompartment : CellCompartment.values()) {
-									List<Replicate> replicates = experiment.getSortedReplicates();
-									// SPCs
-									for (Replicate replicate : replicates) {
-										Fractionation fractionation = replicate.getFractionation(cellCompartment);
-										if (fractionation != null) {
-											int repSPC = fractionation.getSpectralCount(filteredAccessions, true);
-											fw.write(repSPC + "\t");
+								if (wash == null || wash == experiment.getWash()) {
+									// print the averages
+									for (CellCompartment cellCompartment : CellCompartment.values()) {
+										List<Replicate> replicates = experiment.getSortedReplicates();
+										// SPCs
+										for (Replicate replicate : replicates) {
+											Fractionation fractionation = replicate.getFractionation(cellCompartment);
+											if (fractionation != null) {
+												int repSPC = fractionation.getSpectralCount(filteredAccessions, true);
+												fw.write(repSPC + "\t");
+											}
 										}
 									}
 								}
@@ -683,15 +710,17 @@ public class _4DNucleomeAnalyzer {
 						}
 						for (Experiment experiment : getAllExperiments()) {
 							if (experiment.getCellType() == celltype) {
-								// print the averages
-								for (CellCompartment cellCompartment : CellCompartment.values()) {
-									List<Replicate> replicates = experiment.getSortedReplicates();
-									// NSAFs
-									for (Replicate replicate : replicates) {
-										Fractionation fractionation = replicate.getFractionation(cellCompartment);
-										if (fractionation != null) {
-											double repNSAF = fractionation.getAverageNSAF(filteredAccessions, true);
-											fw.write(repNSAF + "\t");
+								if (wash == null || wash == experiment.getWash()) {
+									// print the averages
+									for (CellCompartment cellCompartment : CellCompartment.values()) {
+										List<Replicate> replicates = experiment.getSortedReplicates();
+										// NSAFs
+										for (Replicate replicate : replicates) {
+											Fractionation fractionation = replicate.getFractionation(cellCompartment);
+											if (fractionation != null) {
+												double repNSAF = fractionation.getAverageNSAF(filteredAccessions, true);
+												fw.write(repNSAF + "\t");
+											}
 										}
 									}
 								}
@@ -704,16 +733,10 @@ public class _4DNucleomeAnalyzer {
 
 				}
 			}
-		} catch (
-
-		Exception e)
-
-		{
+		} catch (Exception e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
-		} finally
-
-		{
+		} finally {
 			if (fw != null) {
 				fw.close();
 			}
@@ -722,9 +745,9 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
-	public int getTotalSPC(String rawAcc, CellType cellType) throws IOException {
+	public int getTotalSPC(String rawAcc, CellType cellType, Wash wash) throws IOException {
 		if (!totalSPCs.containsKey(rawAcc)) {
-			Set<String> individualAccs = new HashSet<String>();
+			Set<String> individualAccs = new THashSet<String>();
 			if (rawAcc.contains(",")) {
 				// because if this has a comma it is because
 				// it is an indistinguisable group
@@ -735,9 +758,9 @@ public class _4DNucleomeAnalyzer {
 			} else {
 				individualAccs.add(rawAcc);
 			}
-			Set<GroupablePSM> psms = new HashSet<GroupablePSM>();
+			Set<GroupablePSM> psms = new THashSet<GroupablePSM>();
 
-			Set<GroupableProtein> proteins = getAllGroupableProteins(cellType);
+			Set<GroupableProtein> proteins = getAllGroupableProteins(cellType, wash);
 			for (GroupableProtein groupableProtein : proteins) {
 				if (rawAcc.contains(groupableProtein.getAccession())) {
 					psms.addAll(groupableProtein.getGroupablePSMs());
@@ -747,27 +770,31 @@ public class _4DNucleomeAnalyzer {
 			int numPSMsTMP = 0;
 			for (Experiment experiment : getAllExperiments()) {
 				if (experiment.getCellType() == cellType) {
-					// print the averages
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						List<Replicate> replicates = experiment.getSortedReplicates();
-						// SPCs
-						for (Replicate replicate : replicates) {
-							Fractionation fractionation = replicate.getFractionation(cellCompartment);
-							if (fractionation != null) {
-								for (String acc : individualAccs) {
+					if (wash == null || experiment.getWash() == wash) {
+						// print the averages
+						for (CellCompartment cellCompartment : CellCompartment.values()) {
+							List<Replicate> replicates = experiment.getSortedReplicates();
+							// SPCs
+							for (Replicate replicate : replicates) {
+								Fractionation fractionation = replicate.getFractionation(cellCompartment);
+								if (fractionation != null) {
+									for (String acc : individualAccs) {
 
-									int spectralCount = fractionation.getSpectralCount(acc, true);
-									numPSMsTMP += spectralCount;
-									// log.info(acc + " " + spectralCount + " in
-									// " + fractionation.getName());
-									if (spectralCount > 0) {
-										// we check all of them but we only
-										// count one
-										// in some dtaselects may appear the
-										// first one and in other may appear the
-										// second,
-										// so we have to check all of them
-										break;
+										int spectralCount = fractionation.getSpectralCount(acc, true);
+										numPSMsTMP += spectralCount;
+										// log.info(acc + " " + spectralCount +
+										// " in
+										// " + fractionation.getName());
+										if (spectralCount > 0) {
+											// we check all of them but we only
+											// count one
+											// in some dtaselects may appear the
+											// first one and in other may appear
+											// the
+											// second,
+											// so we have to check all of them
+											break;
+										}
 									}
 								}
 							}
@@ -783,9 +810,9 @@ public class _4DNucleomeAnalyzer {
 		return totalSPCs.get(rawAcc);
 	}
 
-	private boolean getTransmembraneRegion(String rawAcc, CellType cellType) throws IOException {
+	private boolean getTransmembraneRegion(String rawAcc, CellType cellType, Wash wash) throws IOException {
 
-		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType);
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType, wash);
 		int index = 0;
 		for (String acc : getAccs(rawAcc)) {
 			if (!validArray.get(index++)) {
@@ -808,9 +835,9 @@ public class _4DNucleomeAnalyzer {
 		return false;
 	}
 
-	private String getAccessionStringByEvidence(String rawAcc, ProteinGroup proteinGroup, CellType cellType)
+	private String getAccessionStringByEvidence(String rawAcc, ProteinGroup proteinGroup, CellType cellType, Wash wash)
 			throws IOException {
-		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, proteinGroup, cellType);
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, proteinGroup, cellType, wash);
 		int index = 0;
 		StringBuilder sb = new StringBuilder();
 		for (String acc : getAccs(rawAcc)) {
@@ -826,13 +853,13 @@ public class _4DNucleomeAnalyzer {
 		return sb.toString();
 	}
 
-	private List<Boolean> filterAccessionsByEvidence(String rawAcc, ProteinGroup group, CellType cellType)
+	private List<Boolean> filterAccessionsByEvidence(String rawAcc, ProteinGroup group, CellType cellType, Wash wash)
 			throws IOException {
 
 		List<String> accs = getAccs(rawAcc);
 		final Map<String, Entry> uniprotEntries = Constants.upr.getAnnotatedUniprotEntries(accs);
 		if (group == null) {
-			group = getGroup(rawAcc, cellType);
+			group = getGroup(rawAcc, cellType, wash);
 		}
 		List<Boolean> ret = new ArrayList<Boolean>();
 		List<Boolean> groupEvidenceArray = new ArrayList<Boolean>();
@@ -916,39 +943,43 @@ public class _4DNucleomeAnalyzer {
 		return null;
 	}
 
-	private void writeHeaders(FileWriter fw, CellType celltype) throws IOException {
+	private void writeHeaders(FileWriter fw, CellType celltype, Wash wash) throws IOException {
 
 		// write the header
 		fw.write("NUM\t" + "VALID\t" + "ACC\t" + "Gene\t" + "protein description\t" + "PROTEIN_EVIDENCE\t" + "SCORE\t"
-				+ "Known NE\t" + "Transmembrane region\t" + "Total SPC in " + celltype + "\t");
+				+ "Known NE\t" + "Transmembrane region\t" + "Total SPC in " + celltype + "/" + wash + "\t");
 
 		List<Experiment> experimentList = getAllExperiments();
 
 		if (celltype != null) {
 			for (Experiment experiment : experimentList) {
 				if (experiment.getCellType() == celltype) {
-					// SPC replicates
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						List<Replicate> replicates = experiment.getSortedReplicates();
-						for (Replicate replicate : replicates) {
-							Fractionation fractionation = replicate.getFractionation(cellCompartment);
-							if (fractionation != null) {
-								fw.write(fractionation.getName() + "_SPC\t");
+					if (wash == null || experiment.getWash() == wash) {
+						// SPC replicates
+						for (CellCompartment cellCompartment : CellCompartment.values()) {
+							List<Replicate> replicates = experiment.getSortedReplicates();
+							for (Replicate replicate : replicates) {
+								Fractionation fractionation = replicate.getFractionation(cellCompartment);
+								if (fractionation != null) {
+									fw.write(fractionation.getName() + "_SPC\t");
+								}
 							}
 						}
 					}
-
 				}
 			}
 			for (Experiment experiment : experimentList) {
 				if (experiment.getCellType() == celltype) {
-					// NSAF replicates
-					for (CellCompartment cellCompartment : CellCompartment.values()) {
-						List<Replicate> replicates = experiment.getSortedReplicates();
-						for (Replicate replicate : replicates) {
-							Fractionation fractionation = replicate.getFractionation(cellCompartment);
-							if (fractionation != null) {
-								fw.write(fractionation.getName() + "_NSAF\t");
+					if (wash == null || experiment.getWash() == wash) {
+
+						// NSAF replicates
+						for (CellCompartment cellCompartment : CellCompartment.values()) {
+							List<Replicate> replicates = experiment.getSortedReplicates();
+							for (Replicate replicate : replicates) {
+								Fractionation fractionation = replicate.getFractionation(cellCompartment);
+								if (fractionation != null) {
+									fw.write(fractionation.getName() + "_NSAF\t");
+								}
 							}
 						}
 					}
@@ -963,7 +994,7 @@ public class _4DNucleomeAnalyzer {
 
 	public Set<String> getAllAccs(CellType cellType) throws IOException {
 		if (proteinAccs == null) {
-			proteinAccs = new HashSet<String>();
+			proteinAccs = new THashSet<String>();
 			List<Experiment> allExperiments = getAllExperiments();
 			for (Experiment experiment : allExperiments) {
 				if (experiment.getCellType() == cellType) {
@@ -1000,10 +1031,10 @@ public class _4DNucleomeAnalyzer {
 
 	}
 
-	public String getProteinNameString(String rawAcc, CellType cellType) throws IOException {
+	public String getProteinNameString(String rawAcc, CellType cellType, Wash wash) throws IOException {
 
 		String proteinName = "";
-		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType);
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType, wash);
 		int index = 0;
 		for (String acc : getAccs(rawAcc)) {
 			if (!validArray.get(index++)) {
@@ -1027,10 +1058,10 @@ public class _4DNucleomeAnalyzer {
 		return proteinName;
 	}
 
-	public String getGeneNameString(String rawAcc, CellType cellType) throws IOException {
+	public String getGeneNameString(String rawAcc, CellType cellType, Wash wash) throws IOException {
 
 		List<String> geneNames = new ArrayList<String>();
-		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType);
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType, wash);
 		int index = 0;
 		for (String acc : getAccs(rawAcc)) {
 			if (!validArray.get(index++)) {
@@ -1070,9 +1101,9 @@ public class _4DNucleomeAnalyzer {
 		return list;
 	}
 
-	private ProteinGroup getGroup(String groupKey, CellType cellType) throws IOException {
+	private ProteinGroup getGroup(String groupKey, CellType cellType, Wash wash) throws IOException {
 		if (!groupsByRawAcc.containsKey(groupKey)) {
-			List<ProteinGroup> proteinGroupsTotal = getProteinGroups(cellType);
+			List<ProteinGroup> proteinGroupsTotal = getProteinGroups(cellType, wash);
 			List<ProteinGroup> proteinGroups = proteinGroupsTotal.stream().filter(
 					group -> group.getKey().contains(groupKey) && !group.getKey().toLowerCase().contains("reverse"))
 					.collect(Collectors.toList());
@@ -1095,14 +1126,18 @@ public class _4DNucleomeAnalyzer {
 		return groupsByRawAcc.get(groupKey);
 	}
 
-	private String getFilteredProteinEvidences(String rawAcc, CellType cellType) throws IOException {
+	private String getFilteredProteinEvidences(String rawAcc, CellType cellType, Wash wash) throws IOException {
 		if (rawAcc.contains("Q99M74")) {
 			log.warn(rawAcc);
 		}
-		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType);
+		List<Boolean> validArray = filterAccessionsByEvidence(rawAcc, null, cellType, wash);
 		List<ProteinEvidence> evidences = new ArrayList<ProteinEvidence>();
 		int index = 0;
-		ProteinGroup group = getGroup(rawAcc, null);
+		ProteinGroup group = getGroup(rawAcc, cellType, wash);
+		// group can be null
+		if (group == null) {
+			return "";
+		}
 		for (String acc : getAccs(rawAcc)) {
 			if (!validArray.get(index++)) {
 				continue;
@@ -1135,7 +1170,7 @@ public class _4DNucleomeAnalyzer {
 
 		List<String> proteinAccs = getAccs(rawAcc);
 
-		ProteinGroup group = getGroup(rawAcc, null);
+		ProteinGroup group = getGroup(rawAcc, null, null);
 		StringBuilder sb = new StringBuilder();
 		if (group != null) {
 			for (String proteinAcc : proteinAccs) {
@@ -1160,7 +1195,7 @@ public class _4DNucleomeAnalyzer {
 
 	private String getGeneName(List<String> geneNames) {
 		StringBuilder sb = new StringBuilder();
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new THashSet<String>();
 		for (String geneName : geneNames) {
 			if (set.contains(geneName)) {
 				continue;
@@ -1181,11 +1216,13 @@ public class _4DNucleomeAnalyzer {
 		return experimentsU;
 	}
 
-	public List<Experiment> getExperiments(CellType cellType) {
+	public List<Experiment> getExperiments(CellType cellType, Wash wash) {
 		List<Experiment> ret = new ArrayList<Experiment>();
 		for (Experiment experiment : getAllExperiments()) {
 			if (cellType == null || experiment.getCellType() == cellType) {
-				ret.add(experiment);
+				if (wash == null || wash == experiment.getWash()) {
+					ret.add(experiment);
+				}
 			}
 		}
 		return ret;
@@ -1228,7 +1265,7 @@ public class _4DNucleomeAnalyzer {
 		final Filter goFilter2 = getGOFilter();
 		final Filter keratinFilter = getKeratinFilter();
 		if (goFilter2 != null || keratinFilter != null) {
-			final ProteinGroup group = getGroup(rawAcc, null);
+			final ProteinGroup group = getGroup(rawAcc, null, null);
 			if (group != null) {
 				for (GroupableProtein groupableProtein : group) {
 					if (goFilter2 != null && !goFilter2.isValid((Protein) groupableProtein)) {

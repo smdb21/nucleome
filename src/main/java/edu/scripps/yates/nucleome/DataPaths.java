@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import edu.scripps.yates.utilities.util.Pair;
+
 public class DataPaths {
 	private final File dataPathsFile;
 	private boolean loaded = false;
@@ -74,14 +76,17 @@ public class DataPaths {
 		return arrayPaths;
 	}
 
-	public String getXiFiles(String key) throws IOException {
+	public Pair<String, String> getXiFiles(String key) throws IOException {
 		if (!loaded) {
 			load();
 		}
 
 		for (String key2 : paths.keySet()) {
 			if (key2.contains(key)) {
-				return paths.get(key2).replace("/data/2/rpark/ip2_data//", "/ip2_garibaldi/");
+				String string = paths.get(key2);
+				return new Pair<String, String>(key, string);
+				// return string.replace("/data/2/rpark/ip2_data//",
+				// "/ip2_garibaldi/");
 			}
 		}
 		return null;
@@ -92,7 +97,7 @@ public class DataPaths {
 		final List<String> lines = linesStream.collect(Collectors.toList());
 		for (String line : lines) {
 			line = line.trim();
-			if ("".equals(line)) {
+			if ("".equals(line) || line.startsWith("#")) {
 				continue;
 			}
 			if (line.contains(":")) {
@@ -102,6 +107,7 @@ public class DataPaths {
 				paths.put(key, path);
 			}
 		}
+		linesStream.close();
 		loaded = true;
 	}
 }

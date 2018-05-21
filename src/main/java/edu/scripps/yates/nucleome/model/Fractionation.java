@@ -23,6 +23,8 @@ import edu.scripps.yates.utilities.proteomicsmodel.PSM;
 import edu.scripps.yates.utilities.proteomicsmodel.Peptide;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.set.hash.THashSet;
 
 public class Fractionation {
 	private final CellCompartment cellCompartment;
@@ -104,9 +106,9 @@ public class Fractionation {
 		if (proteinAccs == null) {
 			proteinAccs = new HashSet<String>();
 			final Set<String> keySet = parser.getProteins().keySet();
-			for (String acc : keySet) {
-				proteinAccs.add(acc);
-			}
+
+			proteinAccs.addAll(keySet);
+
 		}
 		return proteinAccs;
 	}
@@ -199,7 +201,7 @@ public class Fractionation {
 
 	public double getSumNSAF(Collection<String> proteinAccessions, boolean skipFilters) throws IOException {
 		double ret = 0.0;
-		Set<String> accs = new HashSet<String>();
+		Set<String> accs = new THashSet<String>();
 		for (String proteinAccession : proteinAccessions) {
 			if (accs.contains(proteinAccession)) {
 				continue;
@@ -210,7 +212,7 @@ public class Fractionation {
 				// we make the average of them because DTASelect gives us a
 				// protein instance per MSRUN and all of them share the same
 				// NSAF. To sum all up would be redundant.
-				List<Double> toAverage = new ArrayList<Double>();
+				TDoubleArrayList toAverage = new TDoubleArrayList();
 				for (Protein protein : proteins) {
 					boolean valid = true;
 					if (!skipFilters) {
@@ -227,7 +229,7 @@ public class Fractionation {
 						}
 					}
 				}
-				ret += Maths.mean(toAverage.toArray(new Double[0]));
+				ret += Maths.mean(toAverage);
 			}
 		}
 		return ret;

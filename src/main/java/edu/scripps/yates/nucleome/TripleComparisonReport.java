@@ -9,29 +9,32 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.scripps.yates.nucleome.model.CellType;
+import edu.scripps.yates.nucleome.model.Wash;
 import edu.scripps.yates.utilities.venndata.VennData;
 
 public class TripleComparisonReport extends PairComparisonReport {
 
 	private final Map<String, Double> scoreMap3;
 	private final CellType cellType3;
+	private final Wash wash3;
 
-	public TripleComparisonReport(_4DNucleomeAnalyzer nucleomeAnalyzer, CellType cellType1,
-			Map<String, Double> scoreMap1, CellType cellType2, Map<String, Double> scoreMap2, CellType cellType3,
-			Map<String, Double> scoreMap3) {
-		super(nucleomeAnalyzer, cellType1, scoreMap1, cellType2, scoreMap2);
+	public TripleComparisonReport(_4DNucleomeAnalyzer nucleomeAnalyzer, CellType cellType1, Wash wash1,
+			Map<String, Double> scoreMap1, CellType cellType2, Wash wash2, Map<String, Double> scoreMap2,
+			CellType cellType3, Wash wash3, Map<String, Double> scoreMap3) {
+		super(nucleomeAnalyzer, cellType1, wash1, scoreMap1, cellType2, wash2, scoreMap2);
 
 		this.scoreMap3 = scoreMap3;
 		this.cellType3 = cellType3;
+		this.wash3 = wash3;
 	}
 
 	@Override
 	public VennData getVennData() throws IOException {
 
 		if (venn == null) {
-			Set<String> enriched1 = getEnriched(scoreMap1, cellType1);
-			Set<String> enriched2 = getEnriched(scoreMap2, cellType2);
-			Set<String> enriched3 = getEnriched(scoreMap3, cellType3);
+			Set<String> enriched1 = getEnriched(scoreMap1, cellType1, wash1);
+			Set<String> enriched2 = getEnriched(scoreMap2, cellType2, wash2);
+			Set<String> enriched3 = getEnriched(scoreMap3, cellType3, wash3);
 			venn = new VennData(cellType1.name() + " vs " + cellType2.name() + " vs " + cellType3.name(),
 					cellType1.name(), enriched1, cellType2.name(), enriched2, cellType3.name(), enriched3);
 		}
@@ -48,11 +51,11 @@ public class TripleComparisonReport extends PairComparisonReport {
 			fw.write("Report made on " + new Date() + "\n");
 			fw.write("We consider enriched proteins when having an enrichment score > "
 					+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
-			fw.write(getEnriched(scoreMap1, cellType1).size() + " proteins enriched in "
+			fw.write(getEnriched(scoreMap1, cellType1, wash1).size() + " proteins enriched in "
 					+ Constants.cellCompartmentToStudy + " in " + cellType1 + "\n");
-			fw.write(getEnriched(scoreMap2, cellType2).size() + " proteins enriched in "
+			fw.write(getEnriched(scoreMap2, cellType2, wash2).size() + " proteins enriched in "
 					+ Constants.cellCompartmentToStudy + " in " + cellType2 + "\n");
-			fw.write(getEnriched(scoreMap3, cellType3).size() + " proteins enriched in "
+			fw.write(getEnriched(scoreMap3, cellType3, wash3).size() + " proteins enriched in "
 					+ Constants.cellCompartmentToStudy + " in " + cellType3 + "\n");
 
 			fw.write(getVennData().getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
@@ -106,8 +109,8 @@ public class TripleComparisonReport extends PairComparisonReport {
 			Double score1 = scoreMap1.get(proteinAcc);
 			Double score2 = scoreMap2.get(proteinAcc);
 			Double score3 = scoreMap3.get(proteinAcc);
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score1 + "|" + score2 + "|" + score3 + "\t" + geneNameString
 					+ "\t" + proteinNameString + "\n");
 		}

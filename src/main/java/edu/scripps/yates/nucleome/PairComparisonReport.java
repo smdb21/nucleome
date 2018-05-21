@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.scripps.yates.nucleome.model.CellType;
+import edu.scripps.yates.nucleome.model.Wash;
 import edu.scripps.yates.utilities.venndata.VennData;
 
 public class PairComparisonReport {
@@ -18,23 +19,26 @@ public class PairComparisonReport {
 	protected final Map<String, Double> scoreMap2;
 	protected final CellType cellType1;
 	protected final CellType cellType2;
-
+	protected final Wash wash1;
+	protected final Wash wash2;
 	protected VennData venn;
 
-	public PairComparisonReport(_4DNucleomeAnalyzer nucleomeAnalyzer, CellType cellType1, Map<String, Double> scoreMap1,
-			CellType cellType2, Map<String, Double> scoreMap2) {
+	public PairComparisonReport(_4DNucleomeAnalyzer nucleomeAnalyzer, CellType cellType1, Wash wash1,
+			Map<String, Double> scoreMap1, CellType cellType2, Wash wash2, Map<String, Double> scoreMap2) {
 		this.nucleomeAnalyzer = nucleomeAnalyzer;
 		this.scoreMap1 = scoreMap1;
 		this.scoreMap2 = scoreMap2;
 		this.cellType1 = cellType1;
 		this.cellType2 = cellType2;
+		this.wash1 = wash1;
+		this.wash2 = wash2;
 	}
 
 	public VennData getVennData() throws IOException {
 
 		if (venn == null) {
-			Set<String> enriched1 = getEnriched(scoreMap1, cellType1);
-			Set<String> enriched2 = getEnriched(scoreMap2, cellType2);
+			Set<String> enriched1 = getEnriched(scoreMap1, cellType1, wash1);
+			Set<String> enriched2 = getEnriched(scoreMap2, cellType2, wash2);
 			if (enriched1 == null || enriched2 == null) {
 				return null;
 			}
@@ -44,14 +48,14 @@ public class PairComparisonReport {
 		return venn;
 	}
 
-	protected Set<String> getEnriched(Map<String, Double> scoreMap, CellType cellType) throws IOException {
+	protected Set<String> getEnriched(Map<String, Double> scoreMap, CellType cellType, Wash wash) throws IOException {
 		if (Constants.ENRICHMENT_SCORE_THRESHOLD == null) {
 			return null;
 		}
 		Set<String> ret = new HashSet<String>();
 		for (String proteinAcc : scoreMap.keySet()) {
 			Double enrichmentScore = scoreMap.get(proteinAcc);
-			if (!this.nucleomeAnalyzer.isValid(proteinAcc, nucleomeAnalyzer.getTotalSPC(proteinAcc, cellType))) {
+			if (!this.nucleomeAnalyzer.isValid(proteinAcc, nucleomeAnalyzer.getTotalSPC(proteinAcc, cellType, wash))) {
 				continue;
 			}
 			if (!Double.isNaN(enrichmentScore) && enrichmentScore >= Constants.ENRICHMENT_SCORE_THRESHOLD) {
@@ -72,9 +76,9 @@ public class PairComparisonReport {
 				fw.write("We consider enriched proteins when having an enrichment score > "
 						+ Constants.ENRICHMENT_SCORE_THRESHOLD + "\n\n");
 
-				fw.write(getEnriched(scoreMap1, cellType1).size() + " proteins enriched in "
+				fw.write(getEnriched(scoreMap1, cellType1, wash1).size() + " proteins enriched in "
 						+ Constants.cellCompartmentToStudy + " in " + cellType1 + "\n");
-				fw.write(getEnriched(scoreMap2, cellType2).size() + " proteins enriched in "
+				fw.write(getEnriched(scoreMap2, cellType2, wash2).size() + " proteins enriched in "
 						+ Constants.cellCompartmentToStudy + " in " + cellType2 + "\n");
 			}
 			VennData vennData = getVennData();
@@ -118,8 +122,8 @@ public class PairComparisonReport {
 			String proteinAcc = obj.toString();
 			Double score = scoreMap.get(proteinAcc);
 
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score + "\t" + geneNameString + "\t" + proteinNameString + "\n");
 		}
 	}
@@ -141,8 +145,8 @@ public class PairComparisonReport {
 
 			Double score1 = scoreMap1.get(proteinAcc);
 			Double score2 = scoreMap2.get(proteinAcc);
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null);
+			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
+			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score1 + "|" + score2 + "\t" + geneNameString + "\t"
 					+ proteinNameString + "\n");
 		}

@@ -8,5 +8,5 @@ package edu.scripps.yates.nucleome.model;
  *
  */
 public enum Wash {
-	UREA, CARBONATE, NONE
+	UREA, UREA_3X, CARBONATE, CARBONATE_3X, NONE, PREC, PREU
 }
