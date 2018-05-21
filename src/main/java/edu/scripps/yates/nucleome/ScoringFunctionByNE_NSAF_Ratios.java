@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.nucleome.model.CellCompartment;
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
+import edu.scripps.yates.nucleome.model.Wash;
 
 /**
  * 
@@ -26,10 +27,16 @@ public class ScoringFunctionByNE_NSAF_Ratios extends ScoringFunction {
 
 	@Override
 	public double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException {
+		return getScore(proteinAccessions, celltype, null);
+	}
+
+	@Override
+	public double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash) throws IOException {
 		double numerator = 0.0;
 		double denominator = 0.0;
 		int totalSPC = 0;
-		List<Experiment> experimentList = analyzer.getExperiments(celltype);
+
+		List<Experiment> experimentList = analyzer.getExperiments(celltype, wash);
 		if (proteinAccessions.contains("Q8K3Z9")) {
 			log.info(proteinAccessions);
 		}

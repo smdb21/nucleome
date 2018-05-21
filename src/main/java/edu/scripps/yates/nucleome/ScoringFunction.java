@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import edu.scripps.yates.nucleome.model.CellType;
+import edu.scripps.yates.nucleome.model.Wash;
 
 public abstract class ScoringFunction {
 	public static double getLog2Ratio(double ratio) {
@@ -24,6 +25,9 @@ public abstract class ScoringFunction {
 	// throws IOException;
 
 	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException;
+
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash)
+			throws IOException;
 
 	public abstract String getName();
 }

@@ -77,6 +77,7 @@ public class Experiment {
 
 	public double getAvgSpectralCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
+
 		final TIntArrayList values = new TIntArrayList();
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
@@ -92,6 +93,7 @@ public class Experiment {
 
 	public double getAvgPeptideCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
+
 		final TIntArrayList values = new TIntArrayList();
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
@@ -107,6 +109,7 @@ public class Experiment {
 
 	public double getAvgSpectralCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
+
 		final TIntArrayList values = new TIntArrayList();
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
@@ -137,6 +140,7 @@ public class Experiment {
 
 	public double getAvgPeptideCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
+
 		final TIntArrayList values = new TIntArrayList();
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
@@ -372,4 +376,8 @@ public class Experiment {
 		return wash;
 	}
 
+	@Override
+	public String toString() {
+		return getName();
+	}
 }

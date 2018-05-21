@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.nucleome.model.CellCompartment;
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Experiment;
+import edu.scripps.yates.nucleome.model.Wash;
 
 /**
  * 
@@ -27,6 +28,11 @@ public class ScoringFunctionByNE_NSAF_Points extends ScoringFunction {
 
 	@Override
 	public double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException {
+		return getScore(proteinAccessions, celltype, null);
+	}
+
+	@Override
+	public double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash) throws IOException {
 		double score = 0.0;
 		List<Experiment> experimentList = new ArrayList<Experiment>();
 		if (celltype == null || celltype == CellType.A) {
