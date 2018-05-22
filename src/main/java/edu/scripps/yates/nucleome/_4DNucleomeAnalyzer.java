@@ -53,7 +53,7 @@ public class _4DNucleomeAnalyzer {
 		_4DNucleomeAnalyzer analyzer;
 		try {
 
-			analyzer = new _4DNucleomeAnalyzer();
+			analyzer = new _4DNucleomeAnalyzer(args[0]);
 
 			////////////////////////////////////////////////////////////
 			// PARAMETERS
