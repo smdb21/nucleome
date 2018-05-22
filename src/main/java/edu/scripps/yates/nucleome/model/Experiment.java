@@ -16,6 +16,7 @@ import edu.scripps.yates.nucleome.Constants;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
 
 public class Experiment {
@@ -76,8 +77,9 @@ public class Experiment {
 
 	public double getAvgSpectralCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
-		TIntArrayList values = new TIntArrayList();
-		for (Replicate replicate : replicates.values()) {
+
+		final TIntArrayList values = new TIntArrayList();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				values.add(fractionation.getSpectralCount(proteinAcc, skipFilters));
@@ -91,8 +93,9 @@ public class Experiment {
 
 	public double getAvgPeptideCount(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
-		TIntArrayList values = new TIntArrayList();
-		for (Replicate replicate : replicates.values()) {
+
+		final TIntArrayList values = new TIntArrayList();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				values.add(fractionation.getPeptideCount(proteinAcc, skipFilters));
@@ -106,8 +109,9 @@ public class Experiment {
 
 	public double getAvgSpectralCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
-		TIntArrayList values = new TIntArrayList();
-		for (Replicate replicate : replicates.values()) {
+
+		final TIntArrayList values = new TIntArrayList();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				values.add(fractionation.getSpectralCount(proteinAccessions, skipFilters));
@@ -121,23 +125,24 @@ public class Experiment {
 
 	public double getAvgNSAF(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
-		List<Double> values = new ArrayList<Double>();
-		for (Replicate replicate : replicates.values()) {
+		final TDoubleArrayList values = new TDoubleArrayList();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				values.add(fractionation.getAverageNSAF(proteinAccessions, skipFilters));
 			}
 		}
 		if (!values.isEmpty()) {
-			return Maths.mean(values.toArray(new Double[0]));
+			return Maths.mean(values);
 		}
 		return 0.0;
 	}
 
 	public double getAvgPeptideCount(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			boolean skipFilters) throws IOException {
-		TIntArrayList values = new TIntArrayList();
-		for (Replicate replicate : replicates.values()) {
+
+		final TIntArrayList values = new TIntArrayList();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				values.add(fractionation.getPeptideCount(proteinAccessions, skipFilters));
@@ -152,7 +157,7 @@ public class Experiment {
 	public double getSumSPC(String proteinAcc, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
 		double ret = 0.0;
-		for (Replicate replicate : replicates.values()) {
+		for (final Replicate replicate : replicates.values()) {
 
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -165,7 +170,7 @@ public class Experiment {
 	public int getSumSPC(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
 		int ret = 0;
-		for (Replicate replicate : replicates.values()) {
+		for (final Replicate replicate : replicates.values()) {
 
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -178,7 +183,7 @@ public class Experiment {
 	public double getSumNSAF(Collection<String> proteinAccessions, CellCompartment cellCompartment, boolean skipFilters)
 			throws IOException {
 		double ret = 0;
-		for (Replicate replicate : replicates.values()) {
+		for (final Replicate replicate : replicates.values()) {
 
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -233,7 +238,7 @@ public class Experiment {
 		if (spc2 == 0.0) {
 			return Double.NEGATIVE_INFINITY;
 		}
-		double nonLogValue = spc1 / spc2;
+		final double nonLogValue = spc1 / spc2;
 		return Math.log(nonLogValue) / Math.log(2);
 	}
 
@@ -250,8 +255,8 @@ public class Experiment {
 
 	public Set<String> getProteinAccs(CellCompartment cellCompartment) throws IOException {
 
-		Set<String> ret = new HashSet<String>();
-		for (Replicate replicate : replicates.values()) {
+		final Set<String> ret = new HashSet<String>();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				ret.addAll(fractionation.getProteinAccs());
@@ -263,8 +268,8 @@ public class Experiment {
 
 	public Set<Protein> getProteins(CellCompartment cellCompartment) throws IOException {
 
-		Set<Protein> ret = new HashSet<Protein>();
-		for (Replicate replicate : replicates.values()) {
+		final Set<Protein> ret = new HashSet<Protein>();
+		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
 				ret.addAll(fractionation.getProteins());
@@ -277,7 +282,7 @@ public class Experiment {
 	public Set<String> getProteinAccs() throws IOException {
 		if (proteinAccs == null) {
 			proteinAccs = new HashSet<String>();
-			for (CellCompartment cellCompartment : CellCompartment.values()) {
+			for (final CellCompartment cellCompartment : CellCompartment.values()) {
 				proteinAccs.addAll(getProteinAccs(cellCompartment));
 			}
 		}
@@ -285,7 +290,7 @@ public class Experiment {
 	}
 
 	public List<Replicate> getReplicates() {
-		List<Replicate> ret = new ArrayList<Replicate>();
+		final List<Replicate> ret = new ArrayList<Replicate>();
 		for (int i = 1; i <= replicates.size(); i++) {
 			ret.add(replicates.get(i));
 		}
@@ -297,19 +302,19 @@ public class Experiment {
 	}
 
 	public String printHeader(boolean writeMSRunPresence) {
-		StringBuilder sb = new StringBuilder();
-		for (Replicate replicate : getSortedReplicates()) {
+		final StringBuilder sb = new StringBuilder();
+		for (final Replicate replicate : getSortedReplicates()) {
 			sb.append(replicate.printHeader());
 		}
 		if (writeMSRunPresence) {
-			sb.append(this.getName() + "_MSRunsPresence\t");
+			sb.append(getName() + "_MSRunsPresence\t");
 		}
 		return sb.toString();
 	}
 
 	public String printColumnsForProtein(String rawAcc, boolean peptideCount) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		for (Replicate replicate : getSortedReplicates()) {
+		final StringBuilder sb = new StringBuilder();
+		for (final Replicate replicate : getSortedReplicates()) {
 			sb.append(replicate.printColumnsForProtein(rawAcc, peptideCount));
 		}
 		return sb.toString();
@@ -317,8 +322,8 @@ public class Experiment {
 
 	public String printColumnsForProteinGroup(Collection<String> proteinAccessions, DataType dataType)
 			throws IOException {
-		StringBuilder sb = new StringBuilder();
-		for (Replicate replicate : getSortedReplicates()) {
+		final StringBuilder sb = new StringBuilder();
+		for (final Replicate replicate : getSortedReplicates()) {
 			sb.append(replicate.printColumnsForProteinGroup(proteinAccessions, dataType));
 		}
 
@@ -326,8 +331,8 @@ public class Experiment {
 	}
 
 	public List<Replicate> getSortedReplicates() {
-		List<Replicate> list = new ArrayList<Replicate>();
-		for (Replicate replicate : replicates.values()) {
+		final List<Replicate> list = new ArrayList<Replicate>();
+		for (final Replicate replicate : replicates.values()) {
 			list.add(replicate);
 		}
 		Collections.sort(list, new Comparator<Replicate>() {
@@ -342,9 +347,9 @@ public class Experiment {
 	}
 
 	public Set<Protein> getProteins() throws IOException {
-		Set<Protein> ret = new HashSet<Protein>();
+		final Set<Protein> ret = new HashSet<Protein>();
 
-		for (CellCompartment cellCompartment : CellCompartment.values()) {
+		for (final CellCompartment cellCompartment : CellCompartment.values()) {
 			ret.addAll(getProteins(cellCompartment));
 		}
 
@@ -354,11 +359,11 @@ public class Experiment {
 	public int getNumReplicatesWithSPCGreaterThan(Collection<String> proteinAccessions, CellCompartment cellCompartment,
 			int spcThreshold) throws IOException {
 		int ret = 0;
-		List<Replicate> sortedReplicates = getSortedReplicates();
-		for (Replicate replicate : sortedReplicates) {
-			Fractionation fractionation = replicate.getFractionation(cellCompartment);
+		final List<Replicate> sortedReplicates = getSortedReplicates();
+		for (final Replicate replicate : sortedReplicates) {
+			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				int spc = fractionation.getSpectralCount(proteinAccessions, true);
+				final int spc = fractionation.getSpectralCount(proteinAccessions, true);
 				if (spc > spcThreshold) {
 					ret++;
 				}
