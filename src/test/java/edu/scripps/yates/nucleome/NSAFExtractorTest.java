@@ -19,14 +19,14 @@ import edu.scripps.yates.nucleome.model.Replicate;
 public class NSAFExtractorTest {
 	@Test
 	public void extractNSAFValues() {
-		String[] genes = { "Lmna", "Lmnb1", "Lmnb2", "Tmpo", "Emd", "Lemd3", "Lemd2", "Tor1aip1", "Lbr", "Sun1", "Sun2",
-				"Syne1", "Syne2", "Syne3", "Prr14", "Pom121", "Ndc1", "Nup160", "Nup133", "Nup107", "Nup85", "Nup43",
-				"Nup37", "Nup155", "Nup188", "Nup93", "Nup35" };
+		final String[] genes = { "Lmna", "Lmnb1", "Lmnb2", "Tmpo", "Emd", "Lemd3", "Lemd2", "Tor1aip1", "Lbr", "Sun1",
+				"Sun2", "Syne1", "Syne2", "Syne3", "Prr14", "Pom121", "Ndc1", "Nup160", "Nup133", "Nup107", "Nup85",
+				"Nup43", "Nup37", "Nup155", "Nup188", "Nup93", "Nup35" };
 		_4DNucleomeAnalyzer analyzer;
 		FileWriter fw = null;
 		try {
-
-			analyzer = new _4DNucleomeAnalyzer();
+			final String pass = null;
+			analyzer = new _4DNucleomeAnalyzer(pass);
 
 			////////////////////////////////////////////////////////////
 			// PARAMETERS
@@ -46,31 +46,31 @@ public class NSAFExtractorTest {
 			fw = new FileWriter(new File(FilenameUtils.getFullPath(Constants.DATASET_PATHS_FILE) + File.separator
 					+ "NSAF_NE_over_differentiation.txt"));
 			// header
-			StringBuilder sb2 = new StringBuilder("Gene\t");
-			List<Experiment> experiments = analyzer.getAllExperiments();
+			final StringBuilder sb2 = new StringBuilder("Gene\t");
+			final List<Experiment> experiments = analyzer.getAllExperiments();
 
-			for (Experiment experiment : experiments) {
-				List<Replicate> replicates = experiment.getReplicates();
-				for (Replicate replicate : replicates) {
-					Fractionation fractionation = replicate.getFractionation(CellCompartment.NE);
+			for (final Experiment experiment : experiments) {
+				final List<Replicate> replicates = experiment.getReplicates();
+				for (final Replicate replicate : replicates) {
+					final Fractionation fractionation = replicate.getFractionation(CellCompartment.NE);
 					sb2.append(fractionation.getName() + "\t");
 				}
 			}
 			fw.write(sb2.toString() + "\n");
 			// iterate over genes of interest
-			for (String gene : genes) {
+			for (final String gene : genes) {
 
-				StringBuilder sb = new StringBuilder(gene + "\t");
+				final StringBuilder sb = new StringBuilder(gene + "\t");
 
-				for (Experiment experimentU : experiments) {
-					List<Replicate> replicates = experimentU.getReplicates();
-					for (Replicate replicate : replicates) {
-						Fractionation fractionation = replicate.getFractionation(CellCompartment.NE);
-						Set<String> proteinAccessions = fractionation.getProteins().stream()
+				for (final Experiment experimentU : experiments) {
+					final List<Replicate> replicates = experimentU.getReplicates();
+					for (final Replicate replicate : replicates) {
+						final Fractionation fractionation = replicate.getFractionation(CellCompartment.NE);
+						final Set<String> proteinAccessions = fractionation.getProteins().stream()
 								.filter(p -> p.getGenes().stream().anyMatch(g -> g.getGeneID().equalsIgnoreCase(gene)))
 								.map(p -> p.getAccession()).collect(Collectors.toSet());
 						if (proteinAccessions != null && !proteinAccessions.isEmpty()) {
-							double sumNSAF = fractionation.getAverageNSAF(proteinAccessions, false) * 1000000;
+							final double sumNSAF = fractionation.getAverageNSAF(proteinAccessions, false) * 1000000;
 							sb.append(sumNSAF);
 						}
 						sb.append("\t");
@@ -80,17 +80,17 @@ public class NSAFExtractorTest {
 			}
 			System.out.println("DONE");
 
-		} catch (RuntimeException e) {
+		} catch (final RuntimeException e) {
 			e.printStackTrace();
 			System.err.println("ERROR: " + e.getMessage());
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 			System.err.println("ERROR: " + e.getMessage());
 		} finally {
 			if (fw != null) {
 				try {
 					fw.close();
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					e.printStackTrace();
 				}
 			}
