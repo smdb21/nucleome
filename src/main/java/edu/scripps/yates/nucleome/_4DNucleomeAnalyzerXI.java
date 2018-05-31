@@ -48,17 +48,19 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 			System.out.println("DONE");
 			System.exit(0);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 			System.err.println("ERROR: " + e.getMessage());
 		}
 		System.exit(-1);
 	}
 
-	private final List<Experiment> experimentsNoWash = new ArrayList<Experiment>();
-	private final List<Experiment> experimentsUreaWash = new ArrayList<Experiment>();
-	private final List<Experiment> experimentsCarbonateWash = new ArrayList<Experiment>();
-	private final List<Experiment> experimentsPreWash = new ArrayList<Experiment>();
+	private final List<Experiment> exps_uw1 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_uw2 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_uw3 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_cw1 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_prew1 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_prew2 = new ArrayList<Experiment>();
 
 	public _4DNucleomeAnalyzerXI(String pass) throws IOException {
 		super(pass);
@@ -69,76 +71,65 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 	private void loadDatasetsXi() throws IOException {
 		log.info("Loading datasets");
-		long t1 = System.currentTimeMillis();
-
-		experimentsNoWash.clear();
-		experimentsUreaWash.clear();
-		experimentsCarbonateWash.clear();
-		experimentsPreWash.clear();
-
-		DataPaths dataPaths = new DataPaths(Constants.DATASET_PATHS_FILE);
+		final long t1 = System.currentTimeMillis();
+		exps_uw1.clear();
+		exps_uw2.clear();
+		exps_uw3.clear();
+		exps_cw1.clear();
+		exps_prew1.clear();
+		exps_prew2.clear();
+		final DataPaths dataPaths = new DataPaths(Constants.DATASET_PATHS_FILE);
 		// U (N, Ne, C)
 
 		// FDR 1%
 
-		Pair<String, String> noWash = dataPaths.getXiFiles("mlNE_no wash_2D_rep1");
-		Pair<String, String> cNE_Cw1 = dataPaths.getXiFiles("cNE_Cw1_2D_rep1");
-		Pair<String, String> cCM_Cw1_LC1 = dataPaths.getXiFiles("cCM_Cw1_2D_rep1_LC1");
-		Pair<String, String> cCM_Cw1_LC2 = dataPaths.getXiFiles("cCM_Cw1_2D_rep1_LC2");
-		Pair<String, String> cNE_Uw1 = dataPaths.getXiFiles("cNE_Uw1_2D_rep1");
-		Pair<String, String> cCM_Uw1 = dataPaths.getXiFiles("cCM_Uw1_2D_rep1");
-		Pair<String, String> cNE_Uw2 = dataPaths.getXiFiles("cNE_Uw2_0216LT_rep2");
-		Pair<String, String> cCM_Uw2 = dataPaths.getXiFiles("cCM_Uw2_0216LT_rep2");
-		Pair<String, String> cCM_Cw1_3x = dataPaths.getXiFiles("cCM_Cw1_3x_dig2_0221LT");
-		Pair<String, String> cCM_Uw1_3x = dataPaths.getXiFiles("cCM_Uw2_3x_dig2_0221LT");
-		Pair<String, String> cNE_preCw1 = dataPaths.getXiFiles("20180316_01_cNE_preCw1_0303LT");
-		Pair<String, String> cCM_preCw1 = dataPaths.getXiFiles("20180316_02_cCM_preCw1_0303LT");
-		Pair<String, String> cNE_preUw1 = dataPaths.getXiFiles("20180316_03_cNE_preUw1_0303LT");
-		Pair<String, String> cCM_preUw1 = dataPaths.getXiFiles("20180316_04_cCM_preUw1_0303LT");
-		Pair<String, String> cNE_Uw3 = dataPaths.getXiFiles("20180406_01_cNE_Uw3_0403LT");
-		Pair<String, String> cCM_Uw3 = dataPaths.getXiFiles("20180406_02_cCM_Uw3_0403LT");
+		// final Pair<String, String> noWash = dataPaths.getXiFiles("mlNE_no
+		// wash_2D_rep1");
+		final Pair<String, String> s3_Cw1_CM_3x = dataPaths.getXiFiles("#3_Cw1_CM-3x");
+		final Pair<String, String> s3_Cw1_NE = dataPaths.getXiFiles("#3_Cw1_NE");
+		final Pair<String, String> s3_preW1_CM = dataPaths.getXiFiles("#3_preW1_CM");
+		final Pair<String, String> s3_preW1_NE = dataPaths.getXiFiles("#3_preW1_NE");
+		final Pair<String, String> s4_preW2_CM = dataPaths.getXiFiles("#4_preW2_CM");
+		final Pair<String, String> s4_preW2_NE = dataPaths.getXiFiles("#4_preW2_NE");
+		final Pair<String, String> s4_Uw1_CM_3x = dataPaths.getXiFiles("#4_Uw1_CM-3x");
+		final Pair<String, String> s4_Uw1_NE = dataPaths.getXiFiles("#4_Uw1_NE");
+		final Pair<String, String> s6_Uw2_CM = dataPaths.getXiFiles("#6_Uw2_CM");
+		final Pair<String, String> s6_Uw2_NE = dataPaths.getXiFiles("#6_Uw2_NE");
 
-		Experiment experimentnoWash = new Experiment("mlNE_no wash", Wash.NONE, CellType.LIVER);
-		experimentnoWash.addReplicate(1, Wash.NONE, CellType.LIVER, CellCompartment.NE, getRemoteFile(noWash));
-		experimentsNoWash.add(experimentnoWash);
+		final Pair<String, String> s12_Uw3_CM = dataPaths.getXiFiles("#12_Uw3_CM");
+		final Pair<String, String> s12_Uw3_NE = dataPaths.getXiFiles("#12_Uw3_NE");
 
-		Experiment experimentCarbonateWash = new Experiment("CARBONATE_WASH", Wash.CARBONATE, CellType.C3H);
-		experimentsCarbonateWash.add(experimentCarbonateWash);
-		experimentCarbonateWash.addReplicate(1, Wash.CARBONATE, CellType.C3H, CellCompartment.NE,
-				getRemoteFile(cNE_Cw1));
-		experimentCarbonateWash.addReplicate(1, Wash.CARBONATE, CellType.C3H, CellCompartment.CM,
-				getRemoteFile(cCM_Cw1_LC1));
-		experimentCarbonateWash.addReplicate(2, Wash.CARBONATE, CellType.C3H, CellCompartment.CM,
-				getRemoteFile(cCM_Cw1_LC2));
-		Experiment experimentCarbonateWash3X = new Experiment("CARBONATE_WASH_3X", Wash.CARBONATE_3X, CellType.C3H);
-		experimentCarbonateWash3X.addReplicate(1, Wash.CARBONATE_3X, CellType.C3H, CellCompartment.CM,
-				getRemoteFile(cCM_Cw1_3x));
-		experimentsCarbonateWash.add(experimentCarbonateWash3X);
+		final Experiment cw1 = new Experiment("Cw1", Wash.CW1, CellType.C3H);
+		exps_cw1.add(cw1);
+		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s3_Cw1_CM_3x));
+		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s3_Cw1_NE));
 
-		Experiment experimentUreaWash = new Experiment("UREA_WASH", Wash.UREA, CellType.C3H);
-		experimentsUreaWash.add(experimentUreaWash);
-		experimentUreaWash.addReplicate(1, Wash.UREA, CellType.C3H, CellCompartment.NE, getRemoteFile(cNE_Uw1));
-		experimentUreaWash.addReplicate(2, Wash.UREA, CellType.C3H, CellCompartment.NE, getRemoteFile(cNE_Uw2));
-		experimentUreaWash.addReplicate(3, Wash.UREA, CellType.C3H, CellCompartment.NE, getRemoteFile(cNE_Uw3));
-		experimentUreaWash.addReplicate(1, Wash.UREA, CellType.C3H, CellCompartment.CM, getRemoteFile(cCM_Uw1));
-		experimentUreaWash.addReplicate(2, Wash.UREA, CellType.C3H, CellCompartment.CM, getRemoteFile(cCM_Uw2));
-		experimentUreaWash.addReplicate(3, Wash.UREA, CellType.C3H, CellCompartment.CM, getRemoteFile(cCM_Uw3));
+		final Experiment preW1 = new Experiment("preW1", Wash.PREW1, CellType.C3H);
+		preW1.addReplicate(1, Wash.PREW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s3_preW1_CM));
+		preW1.addReplicate(1, Wash.PREW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s3_preW1_NE));
+		exps_prew1.add(preW1);
 
-		Experiment experimentUreaWash3x = new Experiment("UREA_WASH_3X", Wash.UREA_3X, CellType.C3H);
-		experimentUreaWash3x.addReplicate(1, Wash.UREA_3X, CellType.C3H, CellCompartment.CM, getRemoteFile(cCM_Uw1_3x));
-		experimentsUreaWash.add(experimentUreaWash3x);
+		final Experiment preW2 = new Experiment("preW2", Wash.PREW2, CellType.C3H);
+		exps_prew2.add(preW2);
+		preW2.addReplicate(1, Wash.PREW2, CellType.C3H, CellCompartment.CM, getRemoteFile(s4_preW2_CM));
+		preW2.addReplicate(1, Wash.PREW2, CellType.C3H, CellCompartment.NE, getRemoteFile(s4_preW2_NE));
 
-		Experiment experimentPreCarbonateWash = new Experiment("PRE_CARBONATE_WASH", Wash.PREC, CellType.C3H);
-		experimentsPreWash.add(experimentPreCarbonateWash);
-		experimentPreCarbonateWash.addReplicate(1, Wash.PREC, CellType.C3H, CellCompartment.NE,
-				getRemoteFile(cNE_preCw1));
-		experimentPreCarbonateWash.addReplicate(1, Wash.PREC, CellType.C3H, CellCompartment.CM,
-				getRemoteFile(cCM_preCw1));
-		Experiment experimentPreUreaWash = new Experiment("PRE_UREA_WASH", Wash.PREU, CellType.C3H);
-		experimentPreUreaWash.addReplicate(1, Wash.PREU, CellType.C3H, CellCompartment.NE, getRemoteFile(cNE_preUw1));
-		experimentPreUreaWash.addReplicate(1, Wash.PREU, CellType.C3H, CellCompartment.CM, getRemoteFile(cCM_preUw1));
+		final Experiment uw1 = new Experiment("Uw1", Wash.UW1, CellType.C3H);
+		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s4_Uw1_CM_3x));
+		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s4_Uw1_NE));
+		exps_uw1.add(uw1);
 
-		long t2 = System.currentTimeMillis();
+		final Experiment uw2 = new Experiment("Uw2", Wash.UW2, CellType.C3H);
+		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.CM, getRemoteFile(s6_Uw2_CM));
+		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.NE, getRemoteFile(s6_Uw2_NE));
+		exps_uw2.add(uw2);
+
+		final Experiment uw3 = new Experiment("Uw3", Wash.UW3, CellType.C3H);
+		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.CM, getRemoteFile(s12_Uw3_CM));
+		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.NE, getRemoteFile(s12_Uw3_NE));
+		exps_uw3.add(uw3);
+
+		final long t2 = System.currentTimeMillis();
 		log.info("It took " + DatesUtil.getDescriptiveTimeFromMillisecs(t2 - t1));
 
 	}
@@ -146,26 +137,30 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 	@Override
 	public void run() throws IOException {
 		// choose scoring function
-		long t1 = System.currentTimeMillis();
+		final long t1 = System.currentTimeMillis();
 		try {
 			// load data
 			loadDatasetsXi();
 			// print scores for each cell type
 			final CellType[] values = CellType.values();
-			for (CellType cellType : values) {
-				// restart field variables
-				proteinAccs = null;
-				proteinGroups = null;
-				totalSPCs.clear();
-				groupsByRawAcc.clear();
-				groupableProteins.clear();
-				for (Wash wash : Wash.values()) {
+			for (final CellType cellType : values) {
+
+				for (final Wash wash : Wash.values()) {
+					// restart field variables
+					proteinAccs = null;
+					proteinGroups = null;
+					totalSPCs.clear();
+					groupsByRawAcc.clear();
+					groupableProteins.clear();
 					if (cellType != CellType.C3H) {
 						continue;
 					}
 
 					// annotate proteins with uniprot
 					annotateProteins(cellType);
+					if (wash == Wash.PREW1) {
+						System.out.println("asdf");
+					}
 					writeScoreDistributions(cellType, wash);
 
 					// writeScoreDistributions(cellType, DataType.NSAF, true &&
@@ -190,11 +185,13 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 	@Override
 	public List<Experiment> getAllExperiments() {
-		List<Experiment> list = new ArrayList<Experiment>();
-		list.addAll(experimentsNoWash);
-		list.addAll(experimentsUreaWash);
-		list.addAll(experimentsCarbonateWash);
-		list.addAll(experimentsPreWash);
+		final List<Experiment> list = new ArrayList<Experiment>();
+		list.addAll(exps_uw1);
+		list.addAll(exps_uw2);
+		list.addAll(exps_uw3);
+		list.addAll(exps_cw1);
+		list.addAll(exps_prew1);
+		list.addAll(exps_prew2);
 		return list;
 	}
 

@@ -38,8 +38,8 @@ public class DataPaths {
 			key = key.substring(0, 2);
 
 		}
-		List<String> ret = new ArrayList<String>();
-		for (String key2 : paths.keySet()) {
+		final List<String> ret = new ArrayList<String>();
+		for (final String key2 : paths.keySet()) {
 			if (numreplicate == -1 && key2.toLowerCase().startsWith(key.toLowerCase())) {
 				ret.add(key2);
 			} else if (numreplicate != -1 && key2.toLowerCase().startsWith(key.toLowerCase())
@@ -69,7 +69,7 @@ public class DataPaths {
 			}
 		});
 		final String[] array = ret.toArray(new String[0]);
-		String[] arrayPaths = new String[array.length];
+		final String[] arrayPaths = new String[array.length];
 		for (int i = 0; i < array.length; i++) {
 			arrayPaths[i] = paths.get(array[i]);
 		}
@@ -81,9 +81,9 @@ public class DataPaths {
 			load();
 		}
 
-		for (String key2 : paths.keySet()) {
+		for (final String key2 : paths.keySet()) {
 			if (key2.contains(key)) {
-				String string = paths.get(key2);
+				final String string = paths.get(key2);
 				return new Pair<String, String>(key, string);
 				// return string.replace("/data/2/rpark/ip2_data//",
 				// "/ip2_garibaldi/");
@@ -97,13 +97,13 @@ public class DataPaths {
 		final List<String> lines = linesStream.collect(Collectors.toList());
 		for (String line : lines) {
 			line = line.trim();
-			if ("".equals(line) || line.startsWith("#")) {
+			if ("".equals(line)) {
 				continue;
 			}
 			if (line.contains(":")) {
-				final String[] split = line.split(":");
-				String key = split[0].trim();
-				String path = split[1].trim();
+				final String[] split = line.split("\t");
+				final String key = split[0].trim();
+				final String path = split[3].trim();
 				paths.put(key, path);
 			}
 		}
