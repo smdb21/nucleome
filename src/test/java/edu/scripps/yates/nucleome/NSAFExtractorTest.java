@@ -26,7 +26,8 @@ public class NSAFExtractorTest {
 		FileWriter fw = null;
 		try {
 
-			analyzer = new _4DNucleomeAnalyzer();
+			String pass = null;
+			analyzer = new _4DNucleomeAnalyzer(pass);
 
 			////////////////////////////////////////////////////////////
 			// PARAMETERS
