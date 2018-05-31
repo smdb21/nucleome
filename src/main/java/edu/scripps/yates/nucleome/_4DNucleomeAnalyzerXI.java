@@ -37,7 +37,7 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 			Constants.DATASET_PATHS_FILE = datasetsPathsFile;
 			Constants.MIN_TOTAL_SPC = 5;
 			Constants.MAX_TEST_PROTEINS = 200000;
-			Constants.writeCombinedDistribution = false;// UAM
+			Constants.writeCombinedDistribution = true;// UAM
 			Constants.compareScores = false;
 			UniprotProteinRetriever.enableCache = true;
 			scoringFunction = new ScoringFunctionByNE_NSAF_Ratios(analyzer);
@@ -158,9 +158,6 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 					// annotate proteins with uniprot
 					annotateProteins(cellType);
-					if (wash == Wash.PREW1) {
-						System.out.println("asdf");
-					}
 					writeScoreDistributions(cellType, wash);
 
 					// writeScoreDistributions(cellType, DataType.NSAF, true &&
@@ -172,6 +169,12 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 			// print scores for all celltypes together
 			// writeScoreDistributions(null, DataType.NSAF, true &&
 			// Constants.printRatios);
+			// restart field variables
+			proteinAccs = null;
+			proteinGroups = null;
+			totalSPCs.clear();
+			groupsByRawAcc.clear();
+			groupableProteins.clear();
 			if (Constants.writeCombinedDistribution) {
 				writeScoreDistributions(null, null);
 			}

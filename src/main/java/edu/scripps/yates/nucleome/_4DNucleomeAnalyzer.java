@@ -43,11 +43,13 @@ import edu.scripps.yates.utilities.proteomicsmodel.ProteinAnnotation;
 import edu.scripps.yates.utilities.remote.RemoteSSHFileReference;
 import edu.scripps.yates.utilities.util.Pair;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 
 public class _4DNucleomeAnalyzer {
 	private final static Logger log = Logger.getLogger(_4DNucleomeAnalyzer.class);
+	private final Map<Wash, TObjectDoubleHashMap<String>> scoresByWash = new THashMap<Wash, TObjectDoubleHashMap<String>>();
 
 	public static void main(String[] args) {
 		_4DNucleomeAnalyzer analyzer;
@@ -540,6 +542,9 @@ public class _4DNucleomeAnalyzer {
 		if (!Constants.printScoreDistributions) {
 			return;
 		}
+		final TObjectDoubleHashMap<String> scoresByGene = new TObjectDoubleHashMap<String>();
+		scoresByWash.put(wash, scoresByGene);
+
 		final List<Pair<String, Double>> scores = calculateScoresFromGroups(celltype, wash);
 
 		log.info("Printing scores for " + celltype + " to file");
@@ -581,74 +586,80 @@ public class _4DNucleomeAnalyzer {
 						rawAcc = rawAcc.substring(0, rawAcc.indexOf("["));
 					}
 					final String rawAccString = getAccessionStringByEvidence(rawAcc, null, celltype, wash);
-					if (rawAccString.equals("Q91W53")) {
-						log.info(rawAcc);
-					}
 					final List<String> filteredAccessions = getAccs(rawAccString);
-					String geneNameString = null;
-					// TODO
-					// if (false) {
-					geneNameString = getGeneNameString(rawAcc, celltype, wash);
-					// }
-
+					final String geneNameString = getGeneNameString(rawAcc, celltype, wash);
 					final String proteinNameString = getProteinNameString(rawAcc, celltype, wash);
 					final double score = pair.getSecondElement();
+
+					// store the value
+					scoresByGene.put(geneNameString, score);
+
 					// end testing
 					final int totalSPC = getTotalSPC(rawAcc, celltype, wash);
 					final String valid = isValid(rawAcc, totalSPC) ? "VALID" : "FILTERED";
 
 					fw.write(num++ + "\t" + valid + "\t" + rawAccString + "\t" + geneNameString + "\t"
-							+ proteinNameString + "\t" + getFilteredProteinEvidences(rawAcc, celltype, wash) + "\t"
-							+ score + "\t" + ControlNE.isControl(rawAcc) + "\t"
-							+ getTransmembraneRegion(rawAcc, celltype, wash) + "\t" + totalSPC + "\t");
-					if (celltype != null) {
-						for (final Experiment experiment : getAllExperiments()) {
-							if (experiment.getCellType() == celltype) {
-								if (wash == null || wash == experiment.getWash()) {
-									// print the averages
-									for (final CellCompartment cellCompartment : CellCompartment.values()) {
-										final List<Replicate> replicates = experiment.getSortedReplicates();
-										// SPCs
-										for (final Replicate replicate : replicates) {
-											final Fractionation fractionation = replicate
-													.getFractionation(cellCompartment);
-											if (fractionation != null) {
-												final int repSPC = fractionation.getSpectralCount(filteredAccessions,
-														true);
-												fw.write(repSPC + "\t");
-											}
-										}
-									}
-								}
-							}
-						}
-						for (final Experiment experiment : getAllExperiments()) {
-							if (experiment.getCellType() == celltype) {
-								if (wash == null || wash == experiment.getWash()) {
-									// print the averages
-									for (final CellCompartment cellCompartment : CellCompartment.values()) {
-										final List<Replicate> replicates = experiment.getSortedReplicates();
-										// NSAFs
-										for (final Replicate replicate : replicates) {
-											final Fractionation fractionation = replicate
-													.getFractionation(cellCompartment);
-											if (fractionation != null) {
-												final double repNSAF = fractionation.getAverageNSAF(filteredAccessions,
-														true);
-												fw.write(repNSAF + "\t");
-											}
-										}
-									}
-								}
-							}
-						}
-					} else {
-						throw new IllegalArgumentException("cell type null is not supported");
-					}
-					fw.write("\n");
+							+ proteinNameString + "\t" + getFilteredProteinEvidences(rawAcc, celltype, wash) + "\t");
 
+					if (wash != null) {
+						fw.write(score + "\t");
+					} else {
+						for (final Wash wash2 : Wash.values()) {
+							if (scoresByWash.get(wash2).containsKey(geneNameString)) {
+								final double value = scoresByWash.get(wash2).get(geneNameString);
+								fw.write(value + "\t");
+							} else {
+								fw.write("-\t");
+							}
+						}
+					}
+					fw.write(ControlNE.isControl(rawAcc) + "\t" + getTransmembraneRegion(rawAcc, celltype, wash) + "\t"
+							+ totalSPC + "\t");
+
+					for (final Experiment experiment : getAllExperiments()) {
+						if (celltype == null || experiment.getCellType() == celltype) {
+							if (wash == null || wash == experiment.getWash()) {
+								// print the averages
+								for (final CellCompartment cellCompartment : CellCompartment.values()) {
+									final List<Replicate> replicates = experiment.getSortedReplicates();
+									// SPCs
+									for (final Replicate replicate : replicates) {
+										final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+										if (fractionation != null) {
+											final int repSPC = fractionation.getSpectralCount(filteredAccessions, true);
+											fw.write(repSPC + "\t");
+										}
+									}
+								}
+							}
+						}
+					}
+					for (final Experiment experiment : getAllExperiments()) {
+						if (celltype == null || experiment.getCellType() == celltype) {
+							if (wash == null || wash == experiment.getWash()) {
+								// print the averages
+								for (final CellCompartment cellCompartment : CellCompartment.values()) {
+									final List<Replicate> replicates = experiment.getSortedReplicates();
+									// NSAFs
+									for (final Replicate replicate : replicates) {
+										final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+										if (fractionation != null) {
+											final double repNSAF = fractionation.getAverageNSAF(filteredAccessions,
+													true);
+											fw.write(repNSAF + "\t");
+										}
+									}
+								}
+							}
+						}
+					}
+				} else {
+					throw new IllegalArgumentException("cell type null is not supported");
 				}
+				fw.write("\n");
+
 			}
+
 		} catch (final Exception e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
@@ -687,7 +698,7 @@ public class _4DNucleomeAnalyzer {
 			final int numPSMs = psms.size();
 			int numPSMsTMP = 0;
 			for (final Experiment experiment : getAllExperiments()) {
-				if (experiment.getCellType() == cellType) {
+				if (cellType == null || experiment.getCellType() == cellType) {
 					if (wash == null || experiment.getWash() == wash) {
 						// print the averages
 						for (final CellCompartment cellCompartment : CellCompartment.values()) {
@@ -864,48 +875,53 @@ public class _4DNucleomeAnalyzer {
 	private void writeHeaders(FileWriter fw, CellType celltype, Wash wash) throws IOException {
 
 		// write the header
-		fw.write("NUM\t" + "VALID\t" + "ACC\t" + "Gene\t" + "protein description\t" + "PROTEIN_EVIDENCE\t" + "SCORE\t"
-				+ "Known NE\t" + "Transmembrane region\t" + "Total SPC in " + celltype + "/" + wash + "\t");
+		fw.write("NUM\t" + "VALID\t" + "ACC\t" + "Gene\t" + "protein description\t" + "PROTEIN_EVIDENCE\t");
+
+		if (wash != null) {
+			fw.write("SCORE\t");
+		} else {
+			for (final Wash wash2 : Wash.values()) {
+				fw.write("SCORE_" + wash2 + "\t");
+			}
+		}
+		fw.write("Known NE\t" + "Transmembrane region\t" + "Total SPC in " + celltype + "/" + wash + "\t");
 
 		final List<Experiment> experimentList = getAllExperiments();
 
-		if (celltype != null) {
-			for (final Experiment experiment : experimentList) {
-				if (experiment.getCellType() == celltype) {
-					if (wash == null || experiment.getWash() == wash) {
-						// SPC replicates
-						for (final CellCompartment cellCompartment : CellCompartment.values()) {
-							final List<Replicate> replicates = experiment.getSortedReplicates();
-							for (final Replicate replicate : replicates) {
-								final Fractionation fractionation = replicate.getFractionation(cellCompartment);
-								if (fractionation != null) {
-									fw.write(fractionation.getName() + "_SPC\t");
-								}
+		for (final Experiment experiment : experimentList) {
+			if (celltype == null || experiment.getCellType() == celltype) {
+				if (wash == null || experiment.getWash() == wash) {
+					// SPC replicates
+					for (final CellCompartment cellCompartment : CellCompartment.values()) {
+						final List<Replicate> replicates = experiment.getSortedReplicates();
+						for (final Replicate replicate : replicates) {
+							final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+							if (fractionation != null) {
+								fw.write(fractionation.getName() + "_SPC\t");
 							}
 						}
 					}
 				}
 			}
-			for (final Experiment experiment : experimentList) {
-				if (experiment.getCellType() == celltype) {
-					if (wash == null || experiment.getWash() == wash) {
-
-						// NSAF replicates
-						for (final CellCompartment cellCompartment : CellCompartment.values()) {
-							final List<Replicate> replicates = experiment.getSortedReplicates();
-							for (final Replicate replicate : replicates) {
-								final Fractionation fractionation = replicate.getFractionation(cellCompartment);
-								if (fractionation != null) {
-									fw.write(fractionation.getName() + "_NSAF\t");
-								}
-							}
-						}
-					}
-				}
-			}
-		} else {
-			throw new IllegalArgumentException("CellType null not supported.");
 		}
+		for (final Experiment experiment : experimentList) {
+			if (celltype == null || experiment.getCellType() == celltype) {
+				if (wash == null || experiment.getWash() == wash) {
+
+					// NSAF replicates
+					for (final CellCompartment cellCompartment : CellCompartment.values()) {
+						final List<Replicate> replicates = experiment.getSortedReplicates();
+						for (final Replicate replicate : replicates) {
+							final Fractionation fractionation = replicate.getFractionation(cellCompartment);
+							if (fractionation != null) {
+								fw.write(fractionation.getName() + "_NSAF\t");
+							}
+						}
+					}
+				}
+			}
+		}
+
 		fw.write("\n");
 
 	}

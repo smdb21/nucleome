@@ -8,5 +8,5 @@ package edu.scripps.yates.nucleome.model;
  *
  */
 public enum Wash {
-	UW1, CW1, PREW1, PREW2, UW2, UW3
+	UW1, UW2, UW3, CW1, PREW1, PREW2
 }
