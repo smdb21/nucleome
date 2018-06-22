@@ -587,7 +587,10 @@ public class _4DNucleomeAnalyzer {
 					}
 					final String rawAccString = getAccessionStringByEvidence(rawAcc, null, celltype, wash);
 					final List<String> filteredAccessions = getAccs(rawAccString);
-					final String geneNameString = getGeneNameString(rawAcc, celltype, wash);
+					String geneNameString = getGeneNameString(rawAcc, celltype, wash);
+					if ("".equals(geneNameString)) {
+						geneNameString = rawAccString;
+					}
 					final String proteinNameString = getProteinNameString(rawAcc, celltype, wash);
 					final double score = pair.getSecondElement();
 

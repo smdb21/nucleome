@@ -102,9 +102,13 @@ public class DataPaths {
 			}
 			if (line.contains(":")) {
 				final String[] split = line.split("\t");
-				final String key = split[0].trim();
-				final String path = split[3].trim();
-				paths.put(key, path);
+				final String key = split[2].trim();
+				if (split.length > 6) {
+					final String path = split[6].trim();
+					if (!"".equals(key)) {
+						paths.put(key, path);
+					}
+				}
 			}
 		}
 		linesStream.close();

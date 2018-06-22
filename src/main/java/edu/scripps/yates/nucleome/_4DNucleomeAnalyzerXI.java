@@ -58,13 +58,17 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 	private final List<Experiment> exps_uw1 = new ArrayList<Experiment>();
 	private final List<Experiment> exps_uw2 = new ArrayList<Experiment>();
 	private final List<Experiment> exps_uw3 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_uw4 = new ArrayList<Experiment>();
+
 	private final List<Experiment> exps_cw1 = new ArrayList<Experiment>();
-	private final List<Experiment> exps_prew1 = new ArrayList<Experiment>();
-	private final List<Experiment> exps_prew2 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_cw3 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_preWC1 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_preWU1 = new ArrayList<Experiment>();
+	private final List<Experiment> exps_preWU4 = new ArrayList<Experiment>();
 
 	public _4DNucleomeAnalyzerXI(String pass) throws IOException {
 		super(pass);
-		datasetsPathsFile = "Z:\\share\\Salva\\data\\4D_Nucleome\\Xi data\\Xi data May 2018\\IDcpr10_DTAselectTxt_FullPath_03122018Xi_cleaned.txt";
+		datasetsPathsFile = "Z:\\share\\Salva\\data\\4D_Nucleome\\Xi data\\Xi data June 2018\\20180621_data_paths.txt";
 		outputFolder = new File(new File(datasetsPathsFile).getParent() + File.separator + "output");
 
 	}
@@ -76,8 +80,10 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 		exps_uw2.clear();
 		exps_uw3.clear();
 		exps_cw1.clear();
-		exps_prew1.clear();
-		exps_prew2.clear();
+		exps_cw3.clear();
+		exps_preWC1.clear();
+		exps_preWU1.clear();
+		exps_preWU4.clear();
 		final DataPaths dataPaths = new DataPaths(Constants.DATASET_PATHS_FILE);
 		// U (N, Ne, C)
 
@@ -85,49 +91,69 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 		// final Pair<String, String> noWash = dataPaths.getXiFiles("mlNE_no
 		// wash_2D_rep1");
-		final Pair<String, String> s3_Cw1_CM_3x = dataPaths.getXiFiles("#3_Cw1_CM-3x");
-		final Pair<String, String> s3_Cw1_NE = dataPaths.getXiFiles("#3_Cw1_NE");
-		final Pair<String, String> s3_preW1_CM = dataPaths.getXiFiles("#3_preW1_CM");
-		final Pair<String, String> s3_preW1_NE = dataPaths.getXiFiles("#3_preW1_NE");
-		final Pair<String, String> s4_preW2_CM = dataPaths.getXiFiles("#4_preW2_CM");
-		final Pair<String, String> s4_preW2_NE = dataPaths.getXiFiles("#4_preW2_NE");
-		final Pair<String, String> s4_Uw1_CM_3x = dataPaths.getXiFiles("#4_Uw1_CM-3x");
-		final Pair<String, String> s4_Uw1_NE = dataPaths.getXiFiles("#4_Uw1_NE");
-		final Pair<String, String> s6_Uw2_CM = dataPaths.getXiFiles("#6_Uw2_CM");
-		final Pair<String, String> s6_Uw2_NE = dataPaths.getXiFiles("#6_Uw2_NE");
-
-		final Pair<String, String> s12_Uw3_CM = dataPaths.getXiFiles("#12_Uw3_CM");
-		final Pair<String, String> s12_Uw3_NE = dataPaths.getXiFiles("#12_Uw3_NE");
-
+		// Cw1
+		final Pair<String, String> NE_C1 = dataPaths.getXiFiles("NE_C1");
+		final Pair<String, String> CM_C1_3x = dataPaths.getXiFiles("CM_C1_3x");
 		final Experiment cw1 = new Experiment("Cw1", Wash.CW1, CellType.C3H);
 		exps_cw1.add(cw1);
-		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s3_Cw1_CM_3x));
-		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s3_Cw1_NE));
-
-		final Experiment preW1 = new Experiment("preW1", Wash.PREW1, CellType.C3H);
-		preW1.addReplicate(1, Wash.PREW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s3_preW1_CM));
-		preW1.addReplicate(1, Wash.PREW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s3_preW1_NE));
-		exps_prew1.add(preW1);
-
-		final Experiment preW2 = new Experiment("preW2", Wash.PREW2, CellType.C3H);
-		exps_prew2.add(preW2);
-		preW2.addReplicate(1, Wash.PREW2, CellType.C3H, CellCompartment.CM, getRemoteFile(s4_preW2_CM));
-		preW2.addReplicate(1, Wash.PREW2, CellType.C3H, CellCompartment.NE, getRemoteFile(s4_preW2_NE));
-
+		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_C1));
+		cw1.addReplicate(1, Wash.CW1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_C1_3x));
+		// Cw3
+		final Pair<String, String> CM_C3 = dataPaths.getXiFiles("CM_C3");
+		final Pair<String, String> NE_C3 = dataPaths.getXiFiles("NE_C3");
+		final Experiment cw3 = new Experiment("Cw3", Wash.CW3, CellType.C3H);
+		exps_cw3.add(cw3);
+		cw3.addReplicate(1, Wash.CW3, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_C3));
+		cw3.addReplicate(1, Wash.CW3, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_C3));
+		// preWC1
+		final Pair<String, String> CM_preC1 = dataPaths.getXiFiles("CM_preC1");
+		final Pair<String, String> NE_preC1 = dataPaths.getXiFiles("NE_preC1");
+		final Experiment preWC1 = new Experiment("preWC1", Wash.PREWC1, CellType.C3H);
+		preWC1.addReplicate(1, Wash.PREWC1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_preC1));
+		preWC1.addReplicate(1, Wash.PREWC1, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_preC1));
+		exps_preWC1.add(preWC1);
+		// preWU1
+		final Pair<String, String> CM_preU1 = dataPaths.getXiFiles("CM_preU1");
+		final Pair<String, String> NE_preU1 = dataPaths.getXiFiles("NE_preU1");
+		final Experiment preWU1 = new Experiment("preWU1", Wash.preWU1, CellType.C3H);
+		exps_preWU1.add(preWU1);
+		preWU1.addReplicate(1, Wash.preWU1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_preU1));
+		preWU1.addReplicate(1, Wash.preWU1, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_preU1));
+		// preWU4
+		final Pair<String, String> CM_preU4 = dataPaths.getXiFiles("CM_preU4");
+		final Pair<String, String> NE_preU4 = dataPaths.getXiFiles("NE_preU4");
+		final Experiment preWU4 = new Experiment("preWU4", Wash.PREWU4, CellType.C3H);
+		exps_preWU4.add(preWU4);
+		preWU4.addReplicate(1, Wash.PREWU4, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_preU4));
+		preWU4.addReplicate(1, Wash.PREWU4, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_preU4));
+		// Uw1
+		final Pair<String, String> CM_U1_3x_flush = dataPaths.getXiFiles("CM_U1_3x_flush");
+		final Pair<String, String> NE_U1 = dataPaths.getXiFiles("NE_U1");
 		final Experiment uw1 = new Experiment("Uw1", Wash.UW1, CellType.C3H);
-		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.CM, getRemoteFile(s4_Uw1_CM_3x));
-		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.NE, getRemoteFile(s4_Uw1_NE));
+		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U1_3x_flush));
+		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_U1));
 		exps_uw1.add(uw1);
-
+		// Uw2
+		final Pair<String, String> CM_U2 = dataPaths.getXiFiles("CM_U2");
+		final Pair<String, String> NE_U2 = dataPaths.getXiFiles("NE_U2");
 		final Experiment uw2 = new Experiment("Uw2", Wash.UW2, CellType.C3H);
-		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.CM, getRemoteFile(s6_Uw2_CM));
-		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.NE, getRemoteFile(s6_Uw2_NE));
+		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U2));
+		uw2.addReplicate(1, Wash.UW2, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_U2));
 		exps_uw2.add(uw2);
-
+		// Uw3
+		final Pair<String, String> CM_U3 = dataPaths.getXiFiles("CM_U3");
+		final Pair<String, String> NE_U3 = dataPaths.getXiFiles("NE_U3");
 		final Experiment uw3 = new Experiment("Uw3", Wash.UW3, CellType.C3H);
-		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.CM, getRemoteFile(s12_Uw3_CM));
-		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.NE, getRemoteFile(s12_Uw3_NE));
+		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U3));
+		uw3.addReplicate(1, Wash.UW3, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_U3));
 		exps_uw3.add(uw3);
+		// Uw4
+		final Pair<String, String> CM_U4 = dataPaths.getXiFiles("CM_U4");
+		final Pair<String, String> NE_U4 = dataPaths.getXiFiles("NE_U4");
+		final Experiment uw4 = new Experiment("Uw4", Wash.UW4, CellType.C3H);
+		uw4.addReplicate(1, Wash.UW4, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U4));
+		uw4.addReplicate(1, Wash.UW4, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_U4));
+		exps_uw4.add(uw4);
 
 		final long t2 = System.currentTimeMillis();
 		log.info("It took " + DatesUtil.getDescriptiveTimeFromMillisecs(t2 - t1));
@@ -192,9 +218,12 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 		list.addAll(exps_uw1);
 		list.addAll(exps_uw2);
 		list.addAll(exps_uw3);
+		list.addAll(exps_uw4);
 		list.addAll(exps_cw1);
-		list.addAll(exps_prew1);
-		list.addAll(exps_prew2);
+		list.addAll(exps_cw3);
+		list.addAll(exps_preWC1);
+		list.addAll(exps_preWU1);
+		list.addAll(exps_preWU4);
 		return list;
 	}
 
