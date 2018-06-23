@@ -127,10 +127,10 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 		preWU4.addReplicate(1, Wash.PREWU4, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_preU4));
 		preWU4.addReplicate(1, Wash.PREWU4, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_preU4));
 		// Uw1
-		final Pair<String, String> CM_U1_3x_flush = dataPaths.getXiFiles("CM_U1_3x_flush");
+		final Pair<String, String> CM_U1_3x = dataPaths.getXiFiles("CM_U1_3x");
 		final Pair<String, String> NE_U1 = dataPaths.getXiFiles("NE_U1");
 		final Experiment uw1 = new Experiment("Uw1", Wash.UW1, CellType.C3H);
-		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U1_3x_flush));
+		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.CM, getRemoteFile(CM_U1_3x));
 		uw1.addReplicate(1, Wash.UW1, CellType.C3H, CellCompartment.NE, getRemoteFile(NE_U1));
 		exps_uw1.add(uw1);
 		// Uw2

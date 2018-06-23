@@ -104,6 +104,9 @@ public class DataPaths {
 				final String[] split = line.split("\t");
 				final String key = split[2].trim();
 				if (split.length > 6) {
+					if (split[1].equals("not used")) {
+						continue;
+					}
 					final String path = split[6].trim();
 					if (!"".equals(key)) {
 						paths.put(key, path);
