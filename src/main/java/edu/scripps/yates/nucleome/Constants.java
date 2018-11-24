@@ -49,8 +49,8 @@ public class Constants {
 		if (pattern == null) {
 			pattern = Pattern.compile(decoy);
 		}
-		for (String acc : accs) {
-			boolean isDecoy = pattern.matcher(acc).find();
+		for (final String acc : accs) {
+			final boolean isDecoy = pattern.matcher(acc).find();
 			if (isDecoy) {
 				return true;
 			}

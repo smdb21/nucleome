@@ -102,16 +102,19 @@ public class DataPaths {
 			}
 			if (line.contains(":")) {
 				final String[] split = line.split("\t");
-				final String key = split[2].trim();
-				if (split.length > 6) {
-					if (split[1].equals("not used")) {
-						continue;
-					}
-					final String path = split[6].trim();
-					if (!"".equals(key)) {
-						paths.put(key, path);
-					}
+				String key = split[0].trim();
+				if (key.endsWith(":")) {
+					key = key.substring(0, key.length() - 1);
 				}
+				// if (split.length > 6) {
+				// if (split[1].equals("not used")) {
+				// continue;
+				// }
+				final String path = split[1].trim();
+				if (!"".equals(key)) {
+					paths.put(key, path);
+				}
+				// }
 			}
 		}
 		linesStream.close();

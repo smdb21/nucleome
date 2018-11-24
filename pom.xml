@@ -44,6 +44,11 @@
   		<artifactId>pint.excel</artifactId>
   		<version>0.2.0-SNAPSHOT</version>
   	</dependency>
+  	<dependency>
+  		<groupId>edu.scripps.yates</groupId>
+  		<artifactId>pint.annotations</artifactId>
+  		<version>1.0.1-SNAPSHOT</version>
+  	</dependency>
   </dependencies>
   <repositories>
       <repository>
@@ -68,11 +73,11 @@
          <name>The EBI internal repository</name>
          <url>http://www.ebi.ac.uk/~maven/m2repo_snapshots</url>
       </repository>
-      <repository>
-         <id>genesis-maven2-repository</id>
-         <name>Genesis maven2 repository</name>
-         <url>http://genesis.UGent.be/maven2</url>
-      </repository>
+<!--       <repository> -->
+<!--          <id>genesis-maven2-repository</id> -->
+<!--          <name>Genesis maven2 repository</name> -->
+<!--          <url>http://genesis.UGent.be/maven2</url> -->
+<!--       </repository> -->
       <repository>
          <id>JBoss</id>
          <name>JBoss repository</name>
