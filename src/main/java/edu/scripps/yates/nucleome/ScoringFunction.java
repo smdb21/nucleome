@@ -2,7 +2,9 @@ package edu.scripps.yates.nucleome;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
+import edu.scripps.yates.nucleome.model.CellCompartment;
 import edu.scripps.yates.nucleome.model.CellType;
 import edu.scripps.yates.nucleome.model.Wash;
 
@@ -24,10 +26,20 @@ public abstract class ScoringFunction {
 	// public abstract double getScore(String proteinAcc, CellType celltype)
 	// throws IOException;
 
-	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype) throws IOException;
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype,
+			CellCompartment cellCompartmentToStudy) throws IOException;
 
-	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash)
-			throws IOException;
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash,
+			CellCompartment cellCompartmentToStudy) throws IOException;
+
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype, Wash wash,
+			CellCompartment cellCompartmentToStudy, Collection<CellCompartment> fractionTypes) throws IOException;
+
+	public abstract double getScore(Collection<String> proteinAccessions, CellType celltype, Collection<Wash> washes,
+			CellCompartment cellCompartmentToStudy, Collection<CellCompartment> fractionTypes) throws IOException;
 
 	public abstract String getName();
+
+	public abstract double getSumNSAFs(List<String> proteinAccessions, CellType cellType, Wash washPreWash,
+			CellCompartment fraction) throws IOException;
 }

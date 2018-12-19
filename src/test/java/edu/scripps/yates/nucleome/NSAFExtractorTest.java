@@ -17,6 +17,8 @@ import edu.scripps.yates.nucleome.model.Fractionation;
 import edu.scripps.yates.nucleome.model.Replicate;
 
 public class NSAFExtractorTest {
+	private String DATASET_PATHS_FILE;
+
 	@Test
 	public void extractNSAFValues() {
 		final String[] genes = { "Lmna", "Lmnb1", "Lmnb2", "Tmpo", "Emd", "Lemd3", "Lemd2", "Tor1aip1", "Lbr", "Sun1",
@@ -34,7 +36,7 @@ public class NSAFExtractorTest {
 			Constants.GO_FILTER = false;
 			Constants.cellCompartmentToStudy = CellCompartment.NE;
 			Constants.TESTING = false;
-			Constants.DATASET_PATHS_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths.txt";
+			DATASET_PATHS_FILE = "z:\\share\\Salva\\data\\4D_Nucleome\\datasets_paths.txt";
 			Constants.MIN_TOTAL_SPC = 5;
 			Constants.geneFilter = genes;
 			Constants.printScoreDistributions = false;
@@ -44,7 +46,7 @@ public class NSAFExtractorTest {
 			////////////////////////////////////////////////////////////
 			// load the data
 			analyzer.run();
-			fw = new FileWriter(new File(FilenameUtils.getFullPath(Constants.DATASET_PATHS_FILE) + File.separator
+			fw = new FileWriter(new File(FilenameUtils.getFullPath(DATASET_PATHS_FILE) + File.separator
 					+ "NSAF_NE_over_differentiation.txt"));
 			// header
 			final StringBuilder sb2 = new StringBuilder("Gene\t");

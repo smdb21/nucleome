@@ -25,6 +25,7 @@ public class Experiment {
 	private final Map<Integer, Replicate> replicates = new HashMap<Integer, Replicate>();
 	private Set<String> proteinAccs;
 	private final Wash wash;
+	private List<Protein> proteins;
 
 	public Experiment(String name, Wash wash, CellType cellType) {
 		experimentName = name;
@@ -61,6 +62,15 @@ public class Experiment {
 		replicate.setFraction(cellCompartment, wash, remote);
 	}
 
+	public void addReplicate(Replicate replicate) {
+		final int replicateNum = replicate.getReplicateNum();
+		if (replicates.containsKey(replicateNum)) {
+			replicate = replicates.get(replicateNum);
+		} else {
+			replicates.put(replicateNum, replicate);
+		}
+	}
+
 	/**
 	 * @return the name
 	 */
@@ -82,7 +92,7 @@ public class Experiment {
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				values.add(fractionation.getSpectralCount(proteinAcc, skipFilters));
+				values.add(fractionation.getPSMs(proteinAcc, skipFilters).size());
 			}
 		}
 		if (!values.isEmpty()) {
@@ -161,7 +171,7 @@ public class Experiment {
 
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
-				ret += fractionation.getSpectralCount(proteinAcc, skipFilters);
+				ret += fractionation.getPSMs(proteinAcc, skipFilters).size();
 			}
 		}
 		return ret;
@@ -266,9 +276,9 @@ public class Experiment {
 		return ret;
 	}
 
-	public Set<Protein> getProteins(CellCompartment cellCompartment) throws IOException {
+	public List<Protein> getProteins(CellCompartment cellCompartment) throws IOException {
 
-		final Set<Protein> ret = new HashSet<Protein>();
+		final List<Protein> ret = new ArrayList<Protein>();
 		for (final Replicate replicate : replicates.values()) {
 			final Fractionation fractionation = replicate.getFractionation(cellCompartment);
 			if (fractionation != null) {
@@ -346,14 +356,15 @@ public class Experiment {
 		return list;
 	}
 
-	public Set<Protein> getProteins() throws IOException {
-		final Set<Protein> ret = new HashSet<Protein>();
+	public List<Protein> getProteins() throws IOException {
+		if (proteins == null) {
+			proteins = new ArrayList<Protein>();
 
-		for (final CellCompartment cellCompartment : CellCompartment.values()) {
-			ret.addAll(getProteins(cellCompartment));
+			for (final CellCompartment cellCompartment : CellCompartment.values()) {
+				proteins.addAll(getProteins(cellCompartment));
+			}
 		}
-
-		return ret;
+		return proteins;
 	}
 
 	public int getNumReplicatesWithSPCGreaterThan(Collection<String> proteinAccessions, CellCompartment cellCompartment,

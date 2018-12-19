@@ -35,7 +35,6 @@ public class Constants {
 	 * Note that only enriched proteins are considered in the comparisons
 	 */
 	public static Double ENRICHMENT_SCORE_THRESHOLD;
-	public static String DATASET_PATHS_FILE;
 	public static String[] geneFilter;
 
 	public static boolean isDecoy(String rawAcc) {

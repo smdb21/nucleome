@@ -82,7 +82,7 @@ public class DataPaths {
 		}
 
 		for (final String key2 : paths.keySet()) {
-			if (key2.contains(key)) {
+			if (key2.equals(key)) {
 				final String string = paths.get(key2);
 				return new Pair<String, String>(key, string);
 				// return string.replace("/data/2/rpark/ip2_data//",
@@ -100,23 +100,25 @@ public class DataPaths {
 			if ("".equals(line)) {
 				continue;
 			}
-			if (line.contains(":")) {
-				final String[] split = line.split("\t");
-				String key = split[0].trim();
-				if (key.endsWith(":")) {
-					key = key.substring(0, key.length() - 1);
-				}
-				// if (split.length > 6) {
-				// if (split[1].equals("not used")) {
-				// continue;
-				// }
+			// if (line.contains(":")) {
+			final String[] split = line.split("\t");
+			String key = split[0].trim();
+			if (key.endsWith(":")) {
+				key = key.substring(0, key.length() - 1);
+			}
+			// if (split.length > 6) {
+			// if (split[1].equals("not used")) {
+			// continue;
+			// }
+			if (split.length > 1) {
 				final String path = split[1].trim();
 				if (!"".equals(key)) {
 					paths.put(key, path);
 				}
-				// }
 			}
+			// }
 		}
+		// }
 		linesStream.close();
 		loaded = true;
 	}

@@ -37,8 +37,8 @@ public class PairComparisonReport {
 	public VennData getVennData() throws IOException {
 
 		if (venn == null) {
-			Set<String> enriched1 = getEnriched(scoreMap1, cellType1, wash1);
-			Set<String> enriched2 = getEnriched(scoreMap2, cellType2, wash2);
+			final Set<String> enriched1 = getEnriched(scoreMap1, cellType1, wash1);
+			final Set<String> enriched2 = getEnriched(scoreMap2, cellType2, wash2);
 			if (enriched1 == null || enriched2 == null) {
 				return null;
 			}
@@ -52,10 +52,10 @@ public class PairComparisonReport {
 		if (Constants.ENRICHMENT_SCORE_THRESHOLD == null) {
 			return null;
 		}
-		Set<String> ret = new HashSet<String>();
-		for (String proteinAcc : scoreMap.keySet()) {
-			Double enrichmentScore = scoreMap.get(proteinAcc);
-			if (!this.nucleomeAnalyzer.isValid(proteinAcc, nucleomeAnalyzer.getTotalSPC(proteinAcc, cellType, wash))) {
+		final Set<String> ret = new HashSet<String>();
+		for (final String proteinAcc : scoreMap.keySet()) {
+			final Double enrichmentScore = scoreMap.get(proteinAcc);
+			if (!nucleomeAnalyzer.isValid(proteinAcc, nucleomeAnalyzer.getTotalSPC(proteinAcc, cellType, wash))) {
 				continue;
 			}
 			if (!Double.isNaN(enrichmentScore) && enrichmentScore >= Constants.ENRICHMENT_SCORE_THRESHOLD) {
@@ -81,7 +81,7 @@ public class PairComparisonReport {
 				fw.write(getEnriched(scoreMap2, cellType2, wash2).size() + " proteins enriched in "
 						+ Constants.cellCompartmentToStudy + " in " + cellType2 + "\n");
 			}
-			VennData vennData = getVennData();
+			final VennData vennData = getVennData();
 			if (vennData != null) {
 				fw.write(vennData.getUniqueTo1().size() + " proteins enriched in " + Constants.cellCompartmentToStudy
 						+ " in " + cellType1 + " and not in " + cellType2 + "\n");
@@ -118,12 +118,12 @@ public class PairComparisonReport {
 			throws IOException {
 		int i = 1;
 
-		for (Object obj : proteinAccs) {
-			String proteinAcc = obj.toString();
-			Double score = scoreMap.get(proteinAcc);
+		for (final Object obj : proteinAccs) {
+			final String proteinAcc = obj.toString();
+			final Double score = scoreMap.get(proteinAcc);
 
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
+			final String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
+			final String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score + "\t" + geneNameString + "\t" + proteinNameString + "\n");
 		}
 	}
@@ -131,7 +131,7 @@ public class PairComparisonReport {
 	protected double getSumScores(String secondElement) {
 		double ret = 0.0;
 		final String[] split = secondElement.split("\\|");
-		for (String string : split) {
+		for (final String string : split) {
 			ret += Double.valueOf(string.trim());
 		}
 		return ret;
@@ -140,13 +140,13 @@ public class PairComparisonReport {
 	protected void writeListOfPairs2(FileWriter fw, Collection<Object> proteinAccs, Map<String, Double> scoreMap1,
 			Map<String, Double> scoreMap2) throws IOException {
 		int i = 1;
-		for (Object obj : proteinAccs) {
-			String proteinAcc = obj.toString();
+		for (final Object obj : proteinAccs) {
+			final String proteinAcc = obj.toString();
 
-			Double score1 = scoreMap1.get(proteinAcc);
-			Double score2 = scoreMap2.get(proteinAcc);
-			String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
-			String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
+			final Double score1 = scoreMap1.get(proteinAcc);
+			final Double score2 = scoreMap2.get(proteinAcc);
+			final String proteinNameString = nucleomeAnalyzer.getProteinNameString(proteinAcc, null, null);
+			final String geneNameString = nucleomeAnalyzer.getGeneNameString(proteinAcc, null, null);
 			fw.write(i++ + "\t" + proteinAcc + "\t" + score1 + "|" + score2 + "\t" + geneNameString + "\t"
 					+ proteinNameString + "\n");
 		}

@@ -13,9 +13,9 @@ import org.apache.log4j.Logger;
 
 import edu.scripps.yates.annotations.go.GORetriever;
 import edu.scripps.yates.annotations.go.GoEntry;
-import edu.scripps.yates.annotations.uniprot.xml.DbReferenceType;
-import edu.scripps.yates.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.nucleome.Constants;
+import edu.scripps.yates.utilities.annotations.uniprot.xml.DbReferenceType;
+import edu.scripps.yates.utilities.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.proteomicsmodel.Protein;
 import psidev.psi.tools.ontology_manager.interfaces.OntologyTermI;
@@ -77,16 +77,16 @@ public class GOFilter implements Filter {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		sb.append(
 				"Inclusion list (Any protein annotated with any of these terms passes the filter even if having another term from the exclusion list):");
-		for (String go : GOFilter.GOToInclude) {
+		for (final String go : GOFilter.GOToInclude) {
 			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
 			sb.append(goTerm.getTermAccession() + "\t" + goTerm.getPreferredName());
 		}
 		sb.append(
 				"\nExclusion list (Any protein annotated with any of these following terms will be discarded unless having other one from the inclusion list)");
-		for (String go : GOFilter.GOToExclude) {
+		for (final String go : GOFilter.GOToExclude) {
 
 			final OntologyTermI goTerm = goRetriever.getGOTermByID(go);
 			if (goTerm != null) {
@@ -95,7 +95,7 @@ public class GOFilter implements Filter {
 		}
 		sb.append(
 				"\nExclusion list names (Any protein annotated with a GO term containing the following text will be discarded unless it is annotated with any GO term from the inclusion list)");
-		for (String name : GOFilter.GOPartNameToExclude) {
+		for (final String name : GOFilter.GOPartNameToExclude) {
 
 			sb.append(name);
 		}
@@ -110,7 +110,7 @@ public class GOFilter implements Filter {
 
 	@Override
 	public boolean isValid(String accession) {
-		final String parsedAcc = FastaParser.getACC(accession).getFirstelement();
+		final String parsedAcc = FastaParser.getACC(accession).getAccession();
 		if (valid.contains(parsedAcc)) {
 			return true;
 		} else if (filteredOut.contains(parsedAcc)) {
@@ -121,23 +121,23 @@ public class GOFilter implements Filter {
 	}
 
 	public void filterProteinsByGO(String rawAccession) {
-		Set<String> accs = new HashSet<String>();
+		final Set<String> accs = new HashSet<String>();
 		accs.add(rawAccession);
 		filterProteinsByGO(accs);
 	}
 
 	public void filterProteinsByGO(Collection<String> rawAccessions) {
 		try {
-			List<String> accessions = new ArrayList<String>();
-			for (String rawAccession : rawAccessions) {
-				accessions.add(FastaParser.getACC(rawAccession).getFirstelement());
+			final List<String> accessions = new ArrayList<String>();
+			for (final String rawAccession : rawAccessions) {
+				accessions.add(FastaParser.getACC(rawAccession).getAccession());
 			}
 
 			int numDiscarded = 0;
 			int numValid = 0;
 			final Map<String, Set<GoEntry>> goEntries = goRetriever.retrieveGOEntries(accessions);
 			final Map<String, Entry> annotatedProtein = Constants.upr.getAnnotatedUniprotEntries(accessions);
-			for (String acc : accessions) {
+			for (final String acc : accessions) {
 				if (filteredOut.contains(acc) || valid.contains(acc)) {
 					continue;
 				}
@@ -145,14 +145,14 @@ public class GOFilter implements Filter {
 				try {
 					// inclusion list
 					boolean notExclude = false;
-					for (String go2 : GOToInclude) {
+					for (final String go2 : GOToInclude) {
 						if (goRetriever.containsGOTerm(acc, go2)) {
 							notExclude = true;
 							break;
 						}
 
 					}
-					for (String partNameToInclude : GOPartNameToInclude) {
+					for (final String partNameToInclude : GOPartNameToInclude) {
 						if (goRetriever.containsTermNamePart(acc, partNameToInclude)) {
 							notExclude = true;
 							break;
@@ -162,7 +162,7 @@ public class GOFilter implements Filter {
 						continue;
 					}
 					// exclusion list
-					for (String go : GOToExclude) {
+					for (final String go : GOToExclude) {
 						if (goRetriever.containsGOTerm(acc, go)) {
 							discard = true;
 							break;
@@ -173,7 +173,7 @@ public class GOFilter implements Filter {
 					}
 
 					// exclusion part name list
-					for (String partNameToExclude : GOPartNameToExclude) {
+					for (final String partNameToExclude : GOPartNameToExclude) {
 						if (goRetriever.containsTermNamePart(acc, partNameToExclude)) {
 							discard = true;
 							break;
@@ -185,9 +185,9 @@ public class GOFilter implements Filter {
 					if (annotatedProtein.containsKey(acc)) {
 						final Entry entry = annotatedProtein.get(acc);
 						final List<DbReferenceType> dbReferences = entry.getDbReference();
-						for (DbReferenceType dbReference : dbReferences) {
+						for (final DbReferenceType dbReference : dbReferences) {
 							if (dbReference.getType().equals("GO")) {
-								for (String go : GOToExclude) {
+								for (final String go : GOToExclude) {
 									if (dbReference.getId().equals(go)) {
 										discard = true;
 										break;
@@ -215,7 +215,7 @@ public class GOFilter implements Filter {
 				log.debug(valid.size() + " proteins valid (" + name + ")");
 				log.debug((filteredOut.size() + valid.size()) + " total proteins (" + name + ")");
 			}
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}

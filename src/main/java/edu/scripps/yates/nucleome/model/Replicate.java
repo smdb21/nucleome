@@ -53,7 +53,7 @@ public class Replicate {
 				if (peptideCount) {
 					sb.append(fractionation.getPeptideCount(rawAcc, true));
 				} else {
-					sb.append(fractionation.getSpectralCount(rawAcc, true));
+					sb.append(fractionation.getPSMs(rawAcc, true));
 				}
 				sb.append("\t");
 			}
