@@ -105,7 +105,7 @@ public class _4DNucleomeAnalyzerXI extends _4DNucleomeAnalyzer {
 
 	public _4DNucleomeAnalyzerXI(String pass) throws IOException {
 		super(pass);
-		setDatasetsPathsFile("Z:\\share\\Salva\\data\\4D_Nucleome\\Xi data\\Xi data Nov 2018\\20181130_data_paths.txt");
+		setDatasetsPathsFile("Z:\\share\\Salva\\data\\4D_Nucleome\\Xi data\\Xi data Feb 2019\\20190201_data_paths.txt");
 
 	}
 
