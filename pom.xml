@@ -53,6 +53,12 @@
   		<artifactId>pint.annotations</artifactId>
   		<version>1.0.2-SNAPSHOT</version>
   	</dependency>
+  	<!-- To enable machine optimized matrix computation, the users should add the dependency of smile-netlib: -->
+		<dependency>
+	      <groupId>com.github.haifengl</groupId>
+	      <artifactId>smile-netlib</artifactId>
+	      <version>1.5.2</version>
+	    </dependency>
   </dependencies>
   <repositories>
       <repository>
