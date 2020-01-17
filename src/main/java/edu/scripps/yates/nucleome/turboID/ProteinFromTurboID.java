@@ -28,6 +28,7 @@ public class ProteinFromTurboID {
 	private final THashMap<Replicate, TObjectDoubleHashMap<TurboID_Channel_Norm>> pseudoSpecCountsWithNormalizedIntensitiesByReplicate = new THashMap<Replicate, TObjectDoubleHashMap<TurboID_Channel_Norm>>();
 	private final TObjectDoubleHashMap<TurboID_Channel_Norm> distributedIntensitiesIntensities = new TObjectDoubleHashMap<TurboID_Channel_Norm>();
 	private final THashMap<Replicate, TObjectDoubleHashMap<TurboID_Channel_Ori>> pseudoSpecCountsWithOriginalIntensitiesByReplicate = new THashMap<Replicate, TObjectDoubleHashMap<TurboID_Channel_Ori>>();
+	private static int numDiscarded = 0;
 	private final static Logger log = Logger.getLogger(ProteinFromTurboID.class);
 
 	public ProteinFromTurboID(String acc, String gene, boolean isTransmembrane) {
@@ -692,7 +693,12 @@ public class ProteinFromTurboID {
 			}
 			// 2 or more values are required per category
 			if (intensities.size() > 1) {
-				inputTTest.add(intensities.toArray());
+				if (intensities.size() > 5) {
+					inputTTest.add(intensities.toArray());
+				} else {
+					numDiscarded++;
+					log.info(numDiscarded + " discarded for not having 4/6 intensities ");
+				}
 			}
 		}
 		if (inputTTest.size() < 2) {
@@ -701,6 +707,11 @@ public class ProteinFromTurboID {
 		final TTest ttest = new TTest();
 		final double[] sample1 = inputTTest.get(0);
 		final double[] sample2 = inputTTest.get(1);
+		// we have to have at least 4 out of 6 measurements in each sample in order to
+		// do the test
+		if (sample1.length < 4 || sample2.length < 4) {
+			return Double.NaN;
+		}
 		final double ttestPValue = ttest.tTest(sample1, sample2);
 		final double ttestPValue2 = ttest.homoscedasticTTest(sample1, sample2);
 //		log.info(ttestPValue + " - " + ttestPValue2);

@@ -282,11 +282,15 @@ public class TurboIDDataAnalysisOptimalParams {
 			if (protein.getAcc().equals("Q7TPN9")) {
 				log.info(protein);
 			}
-			fw.write(protein.getAcc() + "\t" + protein.getGene() + "\t" + annotationsUtil.getDescription(protein) + "\t"
-					+ annotationsUtil.getTransmembraneRegion(protein) + "\t" + annotationsUtil.isNucleus(protein) + "\t"
-					+ annotationsUtil.isDNABinding(protein) + "\t" + annotationsUtil.isTranscriptionFactor(protein)
-					+ "\t" + annotationsUtil.isRNABinding(protein) + "\t" + annotationsUtil.isHeterochromatin(protein)
-					+ "\t" + protein.getSumSPCAcrossReplicates() + "\t");
+			if (protein.getAcc().equals("Q8CHH9")) {
+				System.out.println("äsdf");
+			}
+			fw.write(protein.getAcc() + "\t" + parseForExcelConflictingGenes(protein.getGene()) + "\t"
+					+ annotationsUtil.getDescription(protein) + "\t" + annotationsUtil.getTransmembraneRegion(protein)
+					+ "\t" + annotationsUtil.isNucleus(protein) + "\t" + annotationsUtil.isDNABinding(protein) + "\t"
+					+ annotationsUtil.isTranscriptionFactor(protein) + "\t" + annotationsUtil.isRNABinding(protein)
+					+ "\t" + annotationsUtil.isHeterochromatin(protein) + "\t" + protein.getSumSPCAcrossReplicates()
+					+ "\t");
 			// spc per replicate
 			for (final Replicate replicate : Replicate.values(fraction)) {
 				fw.write(protein.getSpc(replicate) + "\t");
@@ -851,8 +855,17 @@ public class TurboIDDataAnalysisOptimalParams {
 		if (gene == null) {
 			gene = "N/A";
 		}
-		if (gene.equals("March5")) {
-			gene = "March5_";
+		if (gene.toLowerCase().startsWith("march")) {
+			gene = "'" + gene;
+		}
+		if (gene.toLowerCase().startsWith("marc")) {
+			gene = "'" + gene;
+		}
+		if (gene.toLowerCase().startsWith("septin")) {
+			gene = "'" + gene;
+		}
+		if (gene.toLowerCase().startsWith("sept")) {
+			gene = "'" + gene;
 		}
 		return gene;
 	}
