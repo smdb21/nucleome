@@ -4,20 +4,26 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Interactor {
 	private final String id;
-	private final Double score;
+	private final Double score1;
+	private final Double score2;
 	private Integer hashCode;
 
-	public Interactor(String id, Double score) {
+	public Interactor(String id, Double score1, Double score2) {
 		this.id = id;
-		this.score = score;
+		this.score1 = score1;
+		this.score2 = score2;
 	}
 
 	public String getId() {
 		return id;
 	}
 
-	public Double getScore() {
-		return score;
+	public Double getScore1() {
+		return score1;
+	}
+
+	public Double getScore2() {
+		return score2;
 	}
 
 	@Override

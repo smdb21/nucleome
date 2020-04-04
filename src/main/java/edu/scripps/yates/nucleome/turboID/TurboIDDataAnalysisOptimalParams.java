@@ -38,8 +38,13 @@ public class TurboIDDataAnalysisOptimalParams {
 	private static final String SPC = "spec count";
 	private static final String PSM = "psm";
 	private static final int GO_TERM_DISTANCE = 3;
+	// input data with all the experiments in one excel file
 	private final File excelFile_TMT11_TurboID_NuCy = new File(
 			"Z:\\share\\Salva\\data\\4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP.xlsx");
+	// input data with all the experiments in one excel file with the difference of
+	// having a filter for at least 2 unique peptides per protein
+	private final File excelFile_TMT11_TurboID_NuCy_2unique = new File(
+			"Z:\\share\\Salva\\data\\4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP_2unique.xlsx");
 	// TEMPORALY DISABLED
 	private final String[] sheetsTMT11Nu = { "Nu_Ta_reload_sch11str", "Nu_Tb_reload_sch11str",
 			"Nu_Tb_rerun_reload_sch11str" };
@@ -63,15 +68,22 @@ public class TurboIDDataAnalysisOptimalParams {
 	//
 	// GENERATE OUTPUT FOR SAINTExpress
 	//
-	private final boolean generateSAINTExpressOutput = false;
+	private final boolean generateSAINTExpressOutput = true;
+	private final boolean useJustNucleusFractionForSAINTExpress = false;
+	private final boolean runAllBaitsTogether = true;
 	// *************************
 
 	// *************************
 	// FRACTION TO ANALYZE
 	// *************************
 	private final boolean analyzeNucleusFraction = true;
-	private final boolean analyzeCytoplasmFraction = false;
+	private final boolean analyzeCytoplasmFraction = !useJustNucleusFractionForSAINTExpress;// false;// true;
+
 	// *************************
+	// MINIMUM THRESHOLD FOR RAW INTENSITIES
+	private static final Double minimumIntensityThreshold = null;// 5000.0;
+	// *************************
+	//////////////////////////////
 
 	public static void main(String[] args) {
 		try {
@@ -85,7 +97,7 @@ public class TurboIDDataAnalysisOptimalParams {
 
 	public void run() {
 		try {
-			if (generateSAINTExpressOutput && !analyzeCytoplasmFraction) {
+			if (!useJustNucleusFractionForSAINTExpress && generateSAINTExpressOutput && !analyzeCytoplasmFraction) {
 				throw new IllegalArgumentException(
 						"You have to enable analyzeCytoplasmFraction! in order to generate SAINTExpress output");
 			}
@@ -99,7 +111,9 @@ public class TurboIDDataAnalysisOptimalParams {
 			// for (final boolean useNormalizedIntensities : yesno) {
 			final boolean onlyTM = false;
 			final boolean onlyNonTM = false;
-			final boolean useNormalizedIntensities = false;
+			final boolean onlyComplete = true; // only use complete proteins, which means that are present in 4 out of 6
+												// replicates.
+			final boolean useNormalizedIntensities = true;
 			final boolean ignoreMissingValues = true;
 			// normalizations:
 			final boolean normalizedByMixChannel = false; // discarded, always
@@ -112,25 +126,26 @@ public class TurboIDDataAnalysisOptimalParams {
 			timesSigmaForSpecificity = 2;
 
 			String fileoutputPrefix = null;
-			int minPerGroup = 0;
+			int minPerGroup = 0; // minimum number of replicates that is required to be a protein detected (or
+									// also, per bait, depending on where this param is used)
 
 			final List<TurboIDExperiment> experiments = new ArrayList<TurboIDExperiment>();
 			if (analyzeNucleusFraction) {
-				final TurboIDExperiment turboIDExperiment = readTurboIDExperiment(excelFile_TMT11_TurboID_NuCy,
+				final TurboIDExperiment turboIDExperiment = readTurboIDExperiment(excelFile_TMT11_TurboID_NuCy_2unique,
 						sheetsTMT11Nu, TurboIDFraction.NU);
 				fileoutputPrefix = "Nu";
 				minPerGroup = 4;
 				experiments.add(turboIDExperiment);
 			}
 			if (analyzeCytoplasmFraction) {
-				final TurboIDExperiment turboIDExperiment = readTurboIDExperiment(excelFile_TMT11_TurboID_NuCy,
+				final TurboIDExperiment turboIDExperiment = readTurboIDExperiment(excelFile_TMT11_TurboID_NuCy_2unique,
 						sheetsTMT11Cy, TurboIDFraction.CY);
 				fileoutputPrefix = "Cy";
 				minPerGroup = 4;
 				experiments.add(turboIDExperiment);
 			}
 			final File outputFile = new File(outputFolder.getAbsolutePath() + File.separator
-					+ getOutputFileName(fileoutputPrefix, onlyTM, onlyNonTM, ignoreMissingValues,
+					+ getOutputFileName(fileoutputPrefix, onlyTM, onlyNonTM, onlyComplete, ignoreMissingValues,
 							useNormalizedIntensities, normalizeToAverage, normalizeToTurboIDChannelAverage, applyLog2));
 			for (final TurboIDExperiment turboIDExperiment : experiments) {
 
@@ -173,6 +188,10 @@ public class TurboIDDataAnalysisOptimalParams {
 							+ FilenameUtils.getBaseName(outputFile.getAbsolutePath()) + "_GaussFit.txt");
 					calculateAndFitNoise(turboIDExperiment, fileGaussian, sigmaFactor);
 
+					final File outputFile5 = new File(outputFile.getParentFile().getAbsoluteFile() + File.separator
+							+ FilenameUtils.getBaseName(outputFile.getAbsolutePath()) + "_specific.txt");
+					exportSpecificity(turboIDExperiment, outputFile5);
+
 					turboIDExperiment.exportToFileForClustering(outputFile, onlyTM, onlyNonTM, ignoreMissingValues,
 							useNormalizedIntensities);
 
@@ -211,9 +230,16 @@ public class TurboIDDataAnalysisOptimalParams {
 					}
 				}
 				final SAINTExpress saintExpress = new SAINTExpress(outputFolderForSAINTExpress, control, test);
-				saintExpress.run(onlyTM, onlyNonTM);
-				final UMAPClustering umap = new UMAPClustering(outputFolderForUMAP, control, test);
-				umap.run(onlyTM, onlyNonTM);
+				saintExpress.setUseDistributedIntensity(!useNormalizedIntensities);
+				saintExpress.setUseNormalizedIntensity(useNormalizedIntensities);
+				saintExpress.setRunAllBaitsTogether(runAllBaitsTogether);
+				saintExpress.run(onlyTM, onlyNonTM, onlyComplete, minPerGroup);
+				try {
+					final UMAPClustering umap = new UMAPClustering(outputFolderForUMAP, control, test);
+					umap.run(onlyTM, onlyNonTM);
+				} catch (final IllegalArgumentException e) {
+					log.warn(e.getMessage());
+				}
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
@@ -252,6 +278,8 @@ public class TurboIDDataAnalysisOptimalParams {
 			fw.write("SPC_" + replicate.name() + "\t");
 		}
 		fw.write("is complete" + "\t");
+		fw.write("complete_4_6" + "\t");
+		fw.write("replicates" + "\t");
 		fw.write("benchmark" + "\t");
 		fw.write(prefix + " ANOVA p-value" + "\t");
 		fw.write(prefix + " ANOVA p-value (with TbID)" + "\t");
@@ -272,7 +300,8 @@ public class TurboIDDataAnalysisOptimalParams {
 			for (final Replicate replicate : Replicate.values(fraction)) {
 				for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
 					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
-						fw.write(prefix + " " + bait.name() + "_" + channel.name() + "\t");
+						fw.write(// prefix + " " +
+								bait.name() + "_" + channel.name() + "\t");
 					}
 				}
 			}
@@ -298,9 +327,15 @@ public class TurboIDDataAnalysisOptimalParams {
 			// column saying whether contains enough data to do the pvalue or
 			// not
 
-			// is complete
-			final boolean isvalid = protein.isAnovaValid(applyLog, distribSPC, distribIntensity, fraction, minPerGroup);
+			// is complete: 4/6 signals in all 4 baits
+			final boolean isvalid = protein.isAnovaValid(distribSPC, distribIntensity, fraction, minPerGroup);
 			fw.write(isvalid + "\t");
+			// is complete_4_6: present in 4/6 replicates
+			final boolean isvalid2 = protein.isComplete(minPerGroup, fraction);
+			fw.write(isvalid2 + "\t");
+			// num replicates
+			final int numReps = protein.getNumReplicates(fraction);
+			fw.write(numReps + "\t");
 			// is benchmark
 			final boolean isBenchmark = benchmarks.containsKey(protein.getGene());
 			fw.write(isBenchmark + "\t");
@@ -358,7 +393,7 @@ public class TurboIDDataAnalysisOptimalParams {
 					}
 
 					if (toAverage.isEmpty()) {
-						value = Double.NaN;
+						value = 0.0;// Double.NaN;
 					} else {
 						value = Maths.mean(toAverage);
 					}
@@ -371,20 +406,21 @@ public class TurboIDDataAnalysisOptimalParams {
 					fw.write(value + "\t");
 				}
 			}
-
+			// print the normalized intensities
+			final boolean forceToWriteNormalizedIntensities = true;
 			for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
 
 				for (final Replicate replicate : Replicate.values(fraction)) {
 					for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
 						if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
 							double value = Double.NaN;
-							if (distribSPC) {
+							if (!forceToWriteNormalizedIntensities && distribSPC) {
 								final TObjectDoubleHashMap<TurboID_Channel_Norm> pseudoSpecCountsWithNormalizedIntensities = protein
 										.getPseudoSpecCountsWithNormalizedIntensities(replicate);
 								if (pseudoSpecCountsWithNormalizedIntensities.containsKey(channel)) {
 									value = pseudoSpecCountsWithNormalizedIntensities.get(channel);
 								}
-							} else if (distribIntensity) {
+							} else if (!forceToWriteNormalizedIntensities && distribIntensity) {
 
 								if (distributedIntensitiesWithNormalizedIntensities.containsKey(channel)) {
 									value = distributedIntensitiesWithNormalizedIntensities.get(channel);
@@ -614,7 +650,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			throws IOException {
 		final Map<String, String> genesByACC = new THashMap<String, String>();
 		final TurboIDExperiment turboIDExperiment = new TurboIDExperiment(fraction);
-		final ExcelReader reader = new ExcelReader(file, 1, 6);
+		final ExcelReader reader = new ExcelReader(file, 0, 6);
 		for (final String sheetName : sheets) {
 			final Replicate replicate = replicateBySheets.get(sheetName);
 			final Set<String> genes = new THashSet<String>();
@@ -626,7 +662,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			final int columnIndexForACC = reader.getColumnIndex(sheetIndex, ACCESSION);
 			final int columnIndexForDescription = reader.getColumnIndex(sheetIndex, DESCRIPTION);
 			final int columnIndexForSPC = reader.getColumnIndex(sheetIndex, SPC);
-			int numRow = 2;
+			int numRow = 1;
 			while (true) {
 				try {
 					final String acc = reader.getStringValue(sheetIndex, numRow, columnIndexForACC);
@@ -763,6 +799,32 @@ public class TurboIDDataAnalysisOptimalParams {
 			}
 
 		}
+		if (minimumIntensityThreshold != null) {
+			int numDiscarded = 0;
+			final Set<String> toRemove = new THashSet<String>();
+			for (final String key : turboIDExperiment.keySet()) {
+				final ProteinFromTurboID protein = turboIDExperiment.get(key);
+				boolean valid = false;
+				for (final TurboID_Channel_Ori channelOri : TurboID_Channel_Ori.values()) {
+					final Double intensity = protein.getOriginalIntensities(channelOri.getExpType()).get(channelOri);
+					if (intensity >= minimumIntensityThreshold) {
+						valid = true;
+						break;
+					}
+				}
+				if (!valid) {
+					// remove protein
+					numDiscarded++;
+					toRemove.add(key);
+				}
+			}
+			for (final String key : toRemove) {
+				turboIDExperiment.remove(key);
+			}
+			log.info(numDiscarded
+					+ " proteins were discarded because they didn't have any channel intensity above threshold "
+					+ minimumIntensityThreshold);
+		}
 		if (normalizeChannelsManually) {
 			for (final ProteinFromTurboID protein : turboIDExperiment.values()) {
 
@@ -788,9 +850,9 @@ public class TurboIDDataAnalysisOptimalParams {
 		log.info("annotations loaded");
 	}
 
-	private String getOutputFileName(String prefix, boolean onlyTM, boolean onlyNonTM, boolean ignoreMissingValues,
-			boolean useOfNormalizedIntensities, boolean normalizeToAverage, boolean normalizeToTurboIDChannelAverage,
-			boolean log2Applied) {
+	private String getOutputFileName(String prefix, boolean onlyTM, boolean onlyNonTM, boolean onlyComplete,
+			boolean ignoreMissingValues, boolean useOfNormalizedIntensities, boolean normalizeToAverage,
+			boolean normalizeToTurboIDChannelAverage, boolean log2Applied) {
 		final String v5 = "";
 		// if (normalizingByV5Tag) {
 		// v5 = "_V5";
@@ -800,12 +862,15 @@ public class TurboIDDataAnalysisOptimalParams {
 		// mixChannel = "_mix";
 		// }
 		String tmString = "_all";
-		if (onlyTM || onlyNonTM) {
+		if (onlyTM || onlyNonTM || onlyComplete) {
 			if (onlyTM) {
 				tmString = "_TM";
 			}
 			if (onlyNonTM) {
 				tmString = "_nonTM";
+			}
+			if (onlyComplete) {
+				tmString = "_complete";
 			}
 		}
 
@@ -868,5 +933,144 @@ public class TurboIDDataAnalysisOptimalParams {
 			gene = "'" + gene;
 		}
 		return gene;
+	}
+
+	private void exportSpecificity(TurboIDExperiment turboIDExperiment, File outputFile) throws IOException {
+		final FileWriter fw = new FileWriter(outputFile);
+		final List<ProteinFromTurboID> proteins = turboIDExperiment
+				.getProteinsSorted(TurboIDExperiment.getComparatorByTotalSPC(false));
+		fw.write("accession" + "\t" + "gene" + "\t" + "transmembrane" + "\t" + "total SPCs" + "\t");
+		// spc per replicate
+		for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+			fw.write("SPC_" + replicate.name() + "\t");
+		}
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+
+			fw.write("FDR_" + bait.name() + "\t");
+
+		}
+		// for (final TurboIDExperimentType bait :
+		// TurboIDExperimentType.getBaits()) {
+		// fw.write(bait.name() + "\t");
+		// }
+		// for (final Replicate replicate : Replicate.values(fraction)) {
+		// for (final TurboIDExperimentType bait :
+		// TurboIDExperimentType.getBaits()) {
+		// fw.write(bait.name() + "_" + replicate.name() + "\t");
+		// }
+		// fw.write("ALL_" + replicate.name() + "\t");
+		// }
+
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+			for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+				fw.write("AVG_pseudoSPC_" + bait.name() + "_" + replicate.name() + "\t");
+			}
+		}
+		// for (final TurboIDExperimentType bait :
+		// TurboIDExperimentType.getBaits()) {
+		// final TurboID_Channel_Norm[] channels =
+		// TurboID_Channel_Norm.values();
+		// for (final TurboID_Channel_Norm channel : channels) {
+		// if (channel.getExpType() == bait) {
+		// fw.write("SPC_" + channel.name() + "\t");
+		// }
+		// }
+		//
+		// }
+		// intensities
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+			for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+				fw.write("AVG_normInt_" + bait.name() + "_" + replicate.name() + "\t");
+			}
+		}
+		fw.write("\n");
+
+		for (final ProteinFromTurboID protein : proteins) {
+			if (protein.getAcc().equals("Q9JM61")) {
+				log.info(protein);
+			}
+			fw.write(protein.getAcc() + "\t" + protein.getGene() + "\t" + protein.isTransmembrane() + "\t"
+					+ protein.getSumSPCAcrossReplicates() + "\t");
+			// spc per replicate
+			for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+				fw.write(protein.getSpc(replicate) + "\t");
+			}
+			// fdr per replicate per bait
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+				final Gaussian fit = turboIDExperiment.getGaussianFit();
+				final List<WeightedObservedPoint> experimentalHistogram = turboIDExperiment.getExperimentalHistogram();
+				fw.write(protein.getLocalFDR(bait, fit, experimentalHistogram) + "\t");
+			}
+			// for (final TurboIDExperimentType bait :
+			// TurboIDExperimentType.getBaits()) {
+			// fw.write(protein.isSpecificInBothExperiments(bait,
+			// turboIDExperiment.getLog2PseudoSPCThreshold(Replicate.A),
+			// turboIDExperiment.getLog2PseudoSPCThreshold(Replicate.B)) +
+			// "\t");
+			// }
+
+			// for (final Replicate replicate : Replicate.values(fraction)) {
+			// boolean allInRep = true;
+			// for (final TurboIDExperimentType bait :
+			// TurboIDExperimentType.getBaits()) {
+			// final boolean specific = protein.isSpecific(bait, replicate,
+			// turboIDExperiment.getLog2PseudoSPCThreshold(replicate));
+			// allInRep = allInRep && specific;
+			// fw.write(specific + "\t");
+			// }
+			// fw.write(allInRep + "\t");
+			// }
+
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+				for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+					final TObjectDoubleHashMap<TurboID_Channel_Norm> pseudoSpecCountsWithNormalizedIntensities = protein
+							.getPseudoSpecCountsWithNormalizedIntensities(replicate);
+					final TDoubleArrayList toAverage = new TDoubleArrayList();
+					for (final TurboID_Channel_Norm channel : pseudoSpecCountsWithNormalizedIntensities.keySet()) {
+						if (channel.getExpType() == bait) {
+							toAverage.add(pseudoSpecCountsWithNormalizedIntensities.get(channel));
+						}
+					}
+					final double mean = Maths.mean(toAverage);
+					if (Double.isNaN(mean)) {
+						fw.write(mean + "\t");
+					} else {
+						fw.write(formatter.format(mean) + "\t");
+					}
+				}
+			}
+			// for (final TurboIDExperimentType expType :
+			// TurboIDExperimentType.getBaits()) {
+			// final TurboID_Channel_Norm[] channels =
+			// TurboID_Channel_Norm.values();
+			// for (final TurboID_Channel_Norm channel : channels) {
+			// if (channel.getExpType() == expType) {
+			// final TObjectDoubleHashMap<TurboID_Channel_Norm>
+			// pseudoSpecCountsWithNormalizedIntensities = protein
+			// .getPseudoSpecCountsWithNormalizedIntensities(channel.getReplicate());
+			// fw.write(formatter.format(pseudoSpecCountsWithNormalizedIntensities.get(channel))
+			// + "\t");
+			// }
+			// }
+			// }
+			// intensities
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+				final TObjectDoubleHashMap<TurboID_Channel_Norm> normalizedIntensitiesPerChannel = protein
+						.getNormalizedIntensities(bait);
+				for (final Replicate replicate : Replicate.values(turboIDExperiment.getFraction())) {
+					final TDoubleArrayList toAverage = new TDoubleArrayList();
+					for (final TurboID_Channel_Norm channel : normalizedIntensitiesPerChannel.keySet()) {
+						if (channel.getReplicate() == replicate) {
+							toAverage.add(normalizedIntensitiesPerChannel.get(channel));
+						}
+					}
+					final double mean = Maths.mean(toAverage);
+					fw.write(mean + "\t");
+				}
+			}
+			fw.write("\n");
+		}
+		fw.close();
+		log.info("File written at: " + outputFile.getAbsolutePath());
 	}
 }

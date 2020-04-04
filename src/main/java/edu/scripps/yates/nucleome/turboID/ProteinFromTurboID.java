@@ -3,6 +3,8 @@ package edu.scripps.yates.nucleome.turboID;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.math3.analysis.function.Gaussian;
 import org.apache.commons.math3.fitting.WeightedObservedPoint;
@@ -15,6 +17,7 @@ import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.THashSet;
 
 public class ProteinFromTurboID {
 	private final THashMap<TurboIDExperimentType, TObjectDoubleHashMap<TurboID_Channel_Norm>> normalizedIntensities = new THashMap<TurboIDExperimentType, TObjectDoubleHashMap<TurboID_Channel_Norm>>();
@@ -410,7 +413,10 @@ public class ProteinFromTurboID {
 					replicate);
 			for (final TurboID_Channel_Norm channel : pseudoSpecCountsWithNormalizedIntensities.keySet()) {
 				if (channel.getExpType() == bait) {
-					toAverage.add(pseudoSpecCountsWithNormalizedIntensities.get(channel));
+					final double val = pseudoSpecCountsWithNormalizedIntensities.get(channel);
+					if (!Double.isNaN(val)) {
+						toAverage.add(val);
+					}
 				}
 			}
 		}
@@ -569,8 +575,11 @@ public class ProteinFromTurboID {
 		return anovaPValue;
 	}
 
-	public boolean isAnovaValid(boolean applyLog, boolean distribSPC, boolean distribIntensity,
-			TurboIDFraction fraction, int minPerGroup) {
+	public boolean isAnovaValid(boolean distribSPC, boolean distribIntensity, TurboIDFraction fraction,
+			int minPerGroup) {
+		if (getAcc().equals("Q9WTR6")) {
+			log.info("asdf");
+		}
 		final List<double[]> inputAnova = new ArrayList<double[]>();
 		inputAnova.clear();
 		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
@@ -614,11 +623,7 @@ public class ProteinFromTurboID {
 				}
 
 			}
-			if (applyLog) {
-				for (int i = 0; i < intensities.size(); i++) {
-					intensities.set(i, Maths.log(intensities.get(i), 2));
-				}
-			}
+
 			// 2 or more values are required per category
 			if (intensities.size() > 1) {
 				inputAnova.add(intensities.toArray());
@@ -793,4 +798,47 @@ public class ProteinFromTurboID {
 		return anovaPValue;
 	}
 
+	/**
+	 * Gets the number of replicates in which the protein is detected with an
+	 * intensity in any of the TMT channels
+	 * 
+	 * @param fraction
+	 * @return
+	 */
+	public int getNumReplicates(TurboIDFraction fraction) {
+		final Map<TurboIDExperimentType, Set<TurboID_Channel_Ori>> map = new THashMap<TurboIDExperimentType, Set<TurboID_Channel_Ori>>();
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaits()) {
+			for (final Replicate replicate : Replicate.values(fraction)) {
+				for (final TurboID_Channel_Ori channel : TurboID_Channel_Ori.values()) {
+					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+						final double intensity = getOriginalIntensities(bait).get(channel);
+						if (!Double.isNaN(intensity) && intensity > 0.0) {
+							if (!map.containsKey(bait)) {
+								map.put(bait, new THashSet<TurboID_Channel_Ori>());
+							}
+							map.get(bait).add(channel);
+						}
+					}
+				}
+			}
+		}
+		int numReplicates = 0;
+
+		for (final TurboIDExperimentType bait : map.keySet()) {
+			final int reps = map.get(bait).size();
+			if (reps > numReplicates) {
+				numReplicates = reps;
+			}
+		}
+
+		return numReplicates;
+	}
+
+	public boolean isComplete(int minReplicates, TurboIDFraction fraction) {
+		final int numReps = getNumReplicates(fraction);
+		if (numReps >= minReplicates) {
+			return true;
+		}
+		return false;
+	}
 }

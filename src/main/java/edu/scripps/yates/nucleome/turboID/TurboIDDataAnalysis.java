@@ -262,7 +262,7 @@ public class TurboIDDataAnalysis {
 			// column saying whether contains enough data to do the pvalue or
 			// not
 
-			final boolean isvalid = protein.isAnovaValid(applyLog, distribSPC, distribIntensity, fraction, minPerGroup);
+			final boolean isvalid = protein.isAnovaValid(distribSPC, distribIntensity, fraction, minPerGroup);
 			fw.write(isvalid + "\t");
 			final double anovaPValue = protein.getAnovaPValueOverBaits(applyLog, distribSPC, distribIntensity,
 					fraction);

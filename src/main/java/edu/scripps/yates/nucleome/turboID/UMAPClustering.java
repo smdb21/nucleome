@@ -43,6 +43,9 @@ public class UMAPClustering {
 	public UMAPClustering(File folder, TurboIDExperiment cyExperiment, TurboIDExperiment nuExperiment)
 			throws IOException {
 		this.folder = folder;
+		if (nuExperiment == null || cyExperiment == null) {
+			throw new IllegalArgumentException("control and real experiment need to be provided");
+		}
 		this.experiments.add(nuExperiment); // first the nu
 		this.experiments.add(cyExperiment); // sedond the cy
 		if (!folder.exists()) {
