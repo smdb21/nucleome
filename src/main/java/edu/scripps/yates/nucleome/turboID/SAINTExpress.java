@@ -15,7 +15,10 @@ import gnu.trove.set.hash.THashSet;
 
 /**
  * This class has method to generate the required files to use in as input with
- * SAINTExpress
+ * SAINTExpress. We decided that it will use pseudoSpecCounts since it is the
+ * only measure that reflects both the abundance of the protein in the sample
+ * and the relative abundance of each protein with respect to the different
+ * channels
  * 
  * @author salvador
  *
@@ -32,11 +35,10 @@ public class SAINTExpress {
 	private File interactionFile;
 
 	private final static Logger log = Logger.getLogger(SAINTExpress.class);
-	private static final double FACTOR = 1000000;
+	private static final double FACTOR = 1;
 	//////////////////////////
 	//
-	private boolean useDistributedIntensity = true;
-	private boolean useNormalizedIntensity = false;
+
 	private boolean runAllBaitsTogether = false;
 
 	//
@@ -64,10 +66,7 @@ public class SAINTExpress {
 
 	public void runBaitsTogether(boolean onlyTM, boolean onlyNonTM, boolean onlyComplete, int minReplicates)
 			throws IOException {
-		String infix = "norm";
-		if (useDistributedIntensity) {
-			infix = "distr";
-		}
+		final String infix = "pseudoSPC";
 		String suffix = "";
 		if (controlExperiment == null) {
 			suffix = "_TIDonlyCTRL";
@@ -101,10 +100,7 @@ public class SAINTExpress {
 	public void runBaitsIndependently(boolean onlyTM, boolean onlyNonTM, boolean onlyComplete, int minReplicates)
 			throws IOException {
 		final boolean append = false;
-		String infix = "norm";
-		if (useDistributedIntensity) {
-			infix = "distr";
-		}
+		final String infix = "pseudoSPC";
 		String suffix = "";
 		if (controlExperiment == null) {
 			suffix = "_TIDonlyCTRL";
@@ -347,6 +343,9 @@ public class SAINTExpress {
 								if (onlyComplete && !protein.isComplete(minReps, controlExperiment.getFraction())) {
 									continue;
 								}
+								if (TurboIDDataAnalysisOptimalParams.isInExclusionList(protein.getAcc())) {
+									continue;
+								}
 								final String preyName = protein.getGene();
 								if ("N/A".equals(preyName)) {
 									log.info(protein.getAcc() + " ignoring it");
@@ -354,24 +353,17 @@ public class SAINTExpress {
 								}
 
 								final int spc = protein.getSpc(replicate);
-								double intensity = 0.0;
-								if (useDistributedIntensity) {
-									intensity = protein.getDistributedIntensitiesWithNormalizedIntensities()
-											.get(channel) * FACTOR;
-								}
-								if (useNormalizedIntensity) {
-									intensity = protein.getNormalizedIntensities(bait).get(channel) * FACTOR;
-								}
-								if (intensity == 56689.85813151278) {
-									log.info("asdf");
+								double value = 0.0;
+								if (protein.getPseudoSpecCountsWithNormalizedIntensities(replicate) != null && protein
+										.getPseudoSpecCountsWithNormalizedIntensities(replicate).containsKey(channel)) {
+									value = protein.getPseudoSpecCountsWithNormalizedIntensities(replicate).get(channel)
+											* FACTOR;
 								}
 
-								if (!Double.isNaN(intensity) && Double.compare(0.0, intensity) != 0) {
-									interactionFW.write(
-											ipName + "\t" + baitName + "\t" + preyName + "\t" + intensity + "\n");
-									if (preyName.equals("Lmna") && baitName.equals("Emd")) {
-										log.info(ipName + "\t" + baitName + "\t" + preyName + "\t" + intensity);
-									}
+								if (!Double.isNaN(value) && Double.compare(0.0, value) != 0) {
+									interactionFW
+											.write(ipName + "\t" + baitName + "\t" + preyName + "\t" + value + "\n");
+
 								}
 							}
 						}
@@ -412,27 +404,25 @@ public class SAINTExpress {
 							if (onlyComplete && !protein.isComplete(minReps, testExperiment.getFraction())) {
 								continue;
 							}
+							if (TurboIDDataAnalysisOptimalParams.isInExclusionList(protein.getAcc())) {
+								continue;
+							}
 							final String preyName = protein.getGene();
 							if ("N/A".equals(preyName)) {
 								log.info(protein.getAcc() + " ignoring it");
 								continue;
 							}
 							final int spc = protein.getSpc(replicate);
-							double intensity = 0.0;
-							if (useDistributedIntensity) {
-								intensity = protein.getDistributedIntensitiesWithNormalizedIntensities().get(channel)
+							double value = 0.0;
+							if (protein.getPseudoSpecCountsWithNormalizedIntensities(replicate) != null && protein
+									.getPseudoSpecCountsWithNormalizedIntensities(replicate).containsKey(channel)) {
+								value = protein.getPseudoSpecCountsWithNormalizedIntensities(replicate).get(channel)
 										* FACTOR;
 							}
-
-							if (useNormalizedIntensity) {
-								intensity = protein.getNormalizedIntensities(channel.getExpType()).get(channel)
-										* FACTOR;
-							}
-							if (!Double.isNaN(intensity) && Double.compare(0.0, intensity) != 0) {
-								interactionFW
-										.write(ipName + "\t" + baitName + "\t" + preyName + "\t" + intensity + "\n");
+							if (!Double.isNaN(value) && Double.compare(0.0, value) != 0) {
+								interactionFW.write(ipName + "\t" + baitName + "\t" + preyName + "\t" + value + "\n");
 								if (preyName.equals("Lmna") && baitName.equals("Emd")) {
-									log.info(ipName + "\t" + baitName + "\t" + preyName + "\t" + intensity);
+									log.info(ipName + "\t" + baitName + "\t" + preyName + "\t" + value);
 								}
 							}
 						}
@@ -447,22 +437,6 @@ public class SAINTExpress {
 				log.info("Interaction file written at: " + interactionFile.getAbsolutePath());
 			}
 		}
-	}
-
-	public boolean isUseDistributedIntensity() {
-		return useDistributedIntensity;
-	}
-
-	public void setUseDistributedIntensity(boolean useDistributedIntensity) {
-		this.useDistributedIntensity = useDistributedIntensity;
-	}
-
-	public boolean isUseNormalizedIntensity() {
-		return useNormalizedIntensity;
-	}
-
-	public void setUseNormalizedIntensity(boolean useNormalizedIntensity) {
-		this.useNormalizedIntensity = useNormalizedIntensity;
 	}
 
 	public void setRunAllBaitsTogether(boolean runAllBaitsTogether) {

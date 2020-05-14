@@ -68,8 +68,8 @@ public class TurboIDDataAnalysisOptimalParams {
 	//
 	// GENERATE OUTPUT FOR SAINTExpress
 	//
-	private final boolean generateSAINTExpressOutput = true;
-	private final boolean useJustNucleusFractionForSAINTExpress = false;
+	private final boolean generateSAINTExpressOutput = false;
+	private final boolean useJustNucleusFractionForSAINTExpress = true;
 	private final boolean runAllBaitsTogether = true;
 	// *************************
 
@@ -230,8 +230,6 @@ public class TurboIDDataAnalysisOptimalParams {
 					}
 				}
 				final SAINTExpress saintExpress = new SAINTExpress(outputFolderForSAINTExpress, control, test);
-				saintExpress.setUseDistributedIntensity(!useNormalizedIntensities);
-				saintExpress.setUseNormalizedIntensity(useNormalizedIntensities);
 				saintExpress.setRunAllBaitsTogether(runAllBaitsTogether);
 				saintExpress.run(onlyTM, onlyNonTM, onlyComplete, minPerGroup);
 				try {
@@ -293,15 +291,46 @@ public class TurboIDDataAnalysisOptimalParams {
 				}
 			}
 		}
+		// distributed intensities averaged per bait
 		for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaitsAndTBID()) {
 			fw.write(prefix + " " + bait.name() + "\t");
 		}
+		// distributed intensities per channel
 		for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
 			for (final Replicate replicate : Replicate.values(fraction)) {
 				for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
 					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
-						fw.write(// prefix + " " +
-								bait.name() + "_" + channel.name() + "\t");
+						fw.write("distr_" + bait.name() + "_" + channel.name() + "\t");
+					}
+				}
+			}
+		}
+		// normalized intensities per channel
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+			for (final Replicate replicate : Replicate.values(fraction)) {
+				for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
+					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+						fw.write("norm_" + bait.name() + "_" + channel.name() + "\t");
+					}
+				}
+			}
+		}
+		// raw intensities per channel
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+			for (final Replicate replicate : Replicate.values(fraction)) {
+				for (final TurboID_Channel_Ori channel : TurboID_Channel_Ori.values()) {
+					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+						fw.write("raw_" + bait.name() + "_" + channel.name() + "\t");
+					}
+				}
+			}
+		}
+		// pseudo SPC per channel
+		for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+			for (final Replicate replicate : Replicate.values(fraction)) {
+				for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
+					if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+						fw.write("pseudoSPC_" + bait.name() + "_" + channel.name() + "\t");
 					}
 				}
 			}
@@ -359,7 +388,7 @@ public class TurboIDDataAnalysisOptimalParams {
 					}
 				}
 			}
-
+			// distributed intensities
 			final TObjectDoubleHashMap<TurboID_Channel_Norm> distributedIntensitiesWithNormalizedIntensities = protein
 					.getDistributedIntensitiesWithNormalizedIntensities();
 			for (final TurboIDExperimentType bait : TurboIDExperimentType.getBaitsAndTBID()) {
@@ -406,34 +435,69 @@ public class TurboIDDataAnalysisOptimalParams {
 					fw.write(value + "\t");
 				}
 			}
-			// print the normalized intensities
-			final boolean forceToWriteNormalizedIntensities = true;
+			// print the distributed intensities
 			for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
 
 				for (final Replicate replicate : Replicate.values(fraction)) {
 					for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
 						if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
-							double value = Double.NaN;
-							if (!forceToWriteNormalizedIntensities && distribSPC) {
-								final TObjectDoubleHashMap<TurboID_Channel_Norm> pseudoSpecCountsWithNormalizedIntensities = protein
-										.getPseudoSpecCountsWithNormalizedIntensities(replicate);
-								if (pseudoSpecCountsWithNormalizedIntensities.containsKey(channel)) {
-									value = pseudoSpecCountsWithNormalizedIntensities.get(channel);
-								}
-							} else if (!forceToWriteNormalizedIntensities && distribIntensity) {
-
-								if (distributedIntensitiesWithNormalizedIntensities.containsKey(channel)) {
-									value = distributedIntensitiesWithNormalizedIntensities.get(channel);
-								}
-							} else {
-								value = protein.getNormalizedIntensities(bait).get(channel);
-							}
-
+							final double value = protein.getDistributedIntensitiesWithNormalizedIntensities()
+									.get(channel);
 							if (applyLog && !Double.isNaN(value)) {
 								final double log2 = Maths.log(value, 2);
-								if (Double.isInfinite(log2)) {
-									log.info("asdf");
-								}
+								fw.write(log2 + "\t");
+							} else {
+								fw.write(value + "\t");
+							}
+
+						}
+					}
+				}
+			}
+			// print the normalized intensities
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+
+				for (final Replicate replicate : Replicate.values(fraction)) {
+					for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
+						if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+							final double value = protein.getNormalizedIntensities(bait).get(channel);
+							if (applyLog && !Double.isNaN(value)) {
+								final double log2 = Maths.log(value, 2);
+								fw.write(log2 + "\t");
+							} else {
+								fw.write(value + "\t");
+							}
+
+						}
+					}
+				}
+			}
+			// print the raw intensities
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+				for (final Replicate replicate : Replicate.values(fraction)) {
+					for (final TurboID_Channel_Ori channel : TurboID_Channel_Ori.values()) {
+						if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+							final double value = protein.getOriginalIntensities(bait).get(channel);
+							if (applyLog && !Double.isNaN(value)) {
+								final double log2 = Maths.log(value, 2);
+								fw.write(log2 + "\t");
+							} else {
+								fw.write(value + "\t");
+							}
+
+						}
+					}
+				}
+			}
+			// print the pseudoSPC
+			for (final TurboIDExperimentType bait : TurboIDExperimentType.values()) {
+				for (final Replicate replicate : Replicate.values(fraction)) {
+					for (final TurboID_Channel_Norm channel : TurboID_Channel_Norm.values()) {
+						if (channel.getExpType() == bait && channel.getReplicate() == replicate) {
+							final double value = protein.getPseudoSpecCountsWithNormalizedIntensities(replicate)
+									.get(channel);
+							if (applyLog && !Double.isNaN(value)) {
+								final double log2 = Maths.log(value, 2);
 								fw.write(log2 + "\t");
 							} else {
 								fw.write(value + "\t");
@@ -841,6 +905,16 @@ public class TurboIDDataAnalysisOptimalParams {
 		}
 		return turboIDExperiment;
 
+	}
+
+	protected static boolean isInExclusionList(String acc) {
+		if ("P22629".equalsIgnoreCase(acc)) {
+			return true;
+		}
+		if (acc.toLowerCase().contains("v5tag")) {
+			return true;
+		}
+		return false;
 	}
 
 	private void loadUniprotAnnotations(Collection<String> accs) {

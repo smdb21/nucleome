@@ -17,8 +17,8 @@ public class GetAnnotation {
 
 	@Test
 	public void getTransmembraneRegion() {
-		final File input = new File("Z:\\share\\Salva\\data\\4D_Nucleome\\TMT8_EMD_IP\\test.txt");
-		final File output = new File("Z:\\\\share\\\\Salva\\\\data\\\\4D_Nucleome\\\\TMT8_EMD_IP\\\\test_transmem.txt");
+		final File input = new File("D:\\Downloads\\1stODYA_lcc_20200408.txt");
+		final File output = new File("D:\\Downloads\\1stODYA_lcc_20200408_TM.txt");
 		FileWriter fw = null;
 		try {
 			fw = new FileWriter(output);
