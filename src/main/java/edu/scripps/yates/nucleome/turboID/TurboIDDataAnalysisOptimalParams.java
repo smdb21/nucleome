@@ -658,7 +658,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			return Collections.emptyList();
 		}
 		final int numBins = 35;
-		final int[] histogram = Histogram.calcHistogram(data, numBins);
+		final double[] histogram = Histogram.calcHistogram(data.toArray(), data.min(), data.max(), numBins)[2];
 		final double binSize = Histogram.getBinSize(data, numBins);
 		final List<WeightedObservedPoint> ret = new ArrayList<WeightedObservedPoint>();
 
@@ -668,7 +668,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			if (index == histogram.length) {
 				break;
 			}
-			final int frecuency = histogram[index++];
+			final double frecuency = histogram[index++];
 			ret.add(new WeightedObservedPoint(1, point, frecuency));
 			point += binSize;
 		}
@@ -693,7 +693,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			return Collections.emptyList();
 		}
 		final int numBins = 35;
-		final int[] histogram = Histogram.calcHistogram(data, numBins);
+		final double[] histogram = Histogram.calcHistogram(data.toArray(), data.min(), data.max(), numBins)[2];
 		final double binSize = Histogram.getBinSize(data, numBins);
 		final List<WeightedObservedPoint> ret = new ArrayList<WeightedObservedPoint>();
 
@@ -703,7 +703,7 @@ public class TurboIDDataAnalysisOptimalParams {
 			if (index == histogram.length) {
 				break;
 			}
-			final int frecuency = histogram[index++];
+			final double frecuency = histogram[index++];
 			ret.add(new WeightedObservedPoint(1, point, frecuency));
 			point += binSize;
 		}

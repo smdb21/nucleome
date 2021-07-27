@@ -51,7 +51,7 @@
   	<dependency>
   		<groupId>edu.scripps.yates</groupId>
   		<artifactId>pint.annotations</artifactId>
-  		<version>1.0.2-SNAPSHOT</version>
+  		<version>1.0.3-SNAPSHOT</version>
   	</dependency>
   	<!-- To enable machine optimized matrix computation, the users should add the dependency of smile-netlib: -->
 		<dependency>
