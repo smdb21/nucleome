@@ -38,13 +38,16 @@ public class TurboIDDataAnalysisOptimalParams {
 	private static final String SPC = "spec count";
 	private static final String PSM = "psm";
 	private static final int GO_TERM_DISTANCE = 3;
+
+//	private static final String workingFolder = "Z:\\share\\Salva\\data\\";
+	private static final String workingFolder = "C:\\Users\\salvador\\Desktop\\";
 	// input data with all the experiments in one excel file
 	private final File excelFile_TMT11_TurboID_NuCy = new File(
-			"Z:\\share\\Salva\\data\\4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP.xlsx");
+			workingFolder + "4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP.xlsx");
 	// input data with all the experiments in one excel file with the difference of
 	// having a filter for at least 2 unique peptides per protein
-	private final File excelFile_TMT11_TurboID_NuCy_2unique = new File(
-			"Z:\\share\\Salva\\data\\4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP_2unique.xlsx");
+	private final File excelFile_TMT11_TurboID_NuCy_2unique = new File(workingFolder
+			+ "4D_Nucleome\\TurboID\\input\\optimized_params\\counts_NE4_NuCy_reload_sch11str_noP_2unique.xlsx");
 	// TEMPORALY DISABLED
 	private final String[] sheetsTMT11Nu = { "Nu_Ta_reload_sch11str", "Nu_Tb_reload_sch11str",
 			"Nu_Tb_rerun_reload_sch11str" };
@@ -53,8 +56,14 @@ public class TurboIDDataAnalysisOptimalParams {
 
 	private final String[] sheetsTMT11Cy = { "Cy_Ta_reload_sch11str", "Cy_Tb_reload_sch11str" };
 
+	// benchmarks
+	final File benchmarksFile = new File(
+			excelFile_TMT11_TurboID_NuCy.getParent() + File.separator + "benchmarks_20191104.txt");
+	// gingrass
+	final File gingrassFile = new File(excelFile_TMT11_TurboID_NuCy.getParent() + File.separator + "gingrass.txt");
+
 	private final File outputFolder = excelFile_TMT11_TurboID_NuCy.getParentFile();
-	private final File uniprotReleasesFolder = new File("Z:\\share\\Salva\\data\\uniprotKB");
+	private final File uniprotReleasesFolder = new File(workingFolder + "uniprotKB");
 	private final AnnotationsUtil annotationsUtil = new AnnotationsUtil(uniprotReleasesFolder);
 	private final boolean[] yesno = { true, false };
 	// private boolean normalizedByMixChannel;
@@ -249,9 +258,10 @@ public class TurboIDDataAnalysisOptimalParams {
 	private void calculateAnovaPerProteinComparingBaits(TurboIDExperiment turboIDExperiment, File outputFile,
 			boolean applyLog, boolean distribSPC, boolean distribIntensity, double anovaPValueThreshold,
 			int minPerGroup) throws IOException {
-		final File benchmarksFile = new File(
-				outputFile.getParentFile().getAbsolutePath() + File.separator + "benchmarks_20191104.txt");
+
 		final Map<String, String> benchmarks = Benchmarks.getBenchmarks(benchmarksFile);
+		final Map<String, String> gingrassMmf = Gingrass.getGingrassMMF(gingrassFile);
+		final Map<String, String> gingrassSafe = Gingrass.getGingrassSAFE(gingrassFile);
 		String prefix = "";
 		if (distribSPC) {
 			prefix = "distSPC";
@@ -279,6 +289,8 @@ public class TurboIDDataAnalysisOptimalParams {
 		fw.write("complete_4_6" + "\t");
 		fw.write("replicates" + "\t");
 		fw.write("benchmark" + "\t");
+		fw.write("Gingrass_SAFE" + "\t");
+		fw.write("Gingrass_MMF" + "\t");
 		fw.write(prefix + " ANOVA p-value" + "\t");
 		fw.write(prefix + " ANOVA p-value (with TbID)" + "\t");
 		// comparisons with t-test
@@ -365,9 +377,26 @@ public class TurboIDDataAnalysisOptimalParams {
 			// num replicates
 			final int numReps = protein.getNumReplicates(fraction);
 			fw.write(numReps + "\t");
-			// is benchmark
-			final boolean isBenchmark = benchmarks.containsKey(protein.getGene());
-			fw.write(isBenchmark + "\t");
+
+			// benchmark
+			if (benchmarks.containsKey(protein.getGene())) {
+				final String localization = benchmarks.get(protein.getGene());
+				fw.write(localization);
+			}
+			fw.write("\t");
+			// mmf
+			if (gingrassMmf.containsKey(protein.getGene())) {
+				final String localization = gingrassMmf.get(protein.getGene());
+				fw.write(localization);
+			}
+			fw.write("\t");
+			// safe
+			if (gingrassSafe.containsKey(protein.getGene())) {
+				final String localization = gingrassSafe.get(protein.getGene());
+				fw.write(localization);
+			}
+			fw.write("\t");
+
 			// ANOVA over the 4 baits
 			final double anovaPValue = protein.getAnovaPValueOverBaits(applyLog, distribSPC, distribIntensity,
 					fraction);
